@@ -24,6 +24,17 @@ import { useUi } from '../../context/UiContext';
 import { pickImage } from '../../utils/imagePicker';
 import { colors } from '../../theme/colors';
 import { GOOGLE_MAPS_API_KEY } from '../../config/maps';
+import {
+  ADDRESS_MAX,
+  NAME_MAX,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizePhone,
+  sanitizeText,
+  validateEmail,
+  validateName,
+  validatePhone,
+} from '../../utils/validation';
 import type { Gender, UserProfile } from '../../types/models';
 
 interface PlacePrediction {
@@ -146,7 +157,8 @@ export default function Profile() {
     if (selected) setDob(selected);
   }
 
-  function onChangeAddressText(text: string) {
+  function onChangeAddressText(raw: string) {
+    const text = sanitizeText(raw, ADDRESS_MAX);
     setAddress(text);
     setLatitude(undefined);
     setLongitude(undefined);
@@ -187,12 +199,17 @@ export default function Profile() {
     }
   }
 
-  const nameError = submitted && !name ? t('Name is required.') : undefined;
-  const emailError = submitted && !email ? t('Email is required.') : undefined;
+  const tr = (key?: string) => (key ? t(key) : undefined);
+
+  // Phone stays optional here, but must be a real number once something is typed.
+  const phoneValidation = phone ? validatePhone(phone) : undefined;
+  const nameError = submitted ? tr(validateName(name)) : undefined;
+  const emailError = submitted ? tr(validateEmail(email)) : undefined;
+  const phoneError = submitted ? tr(phoneValidation) : undefined;
 
   async function handleSave() {
     setSubmitted(true);
-    if (!name || !email) return;
+    if (validateName(name) || validateEmail(email) || phoneValidation) return;
 
     showLoading();
     try {
@@ -219,8 +236,8 @@ export default function Profile() {
       }
 
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('email', email);
+      formData.append('name', name.trim());
+      formData.append('email', email.trim().toLowerCase());
       formData.append('phone', phone);
       formData.append('address', address);
       if (dob) formData.append('dob', moment(dob).format('YYYY-MM-DD'));
@@ -321,8 +338,10 @@ export default function Profile() {
               <TextField
                 label={t('Name')}
                 value={name}
-                onChangeText={setName}
+                onChangeText={value => setName(sanitizeName(value))}
                 editable
+                autoCapitalize="words"
+                maxLength={NAME_MAX}
                 placeholder={t('Enter your full name')}
                 error={nameError}
                 style={styles.input}
@@ -330,10 +349,12 @@ export default function Profile() {
               <TextField
                 label={t('Email')}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={value => setEmail(sanitizeEmail(value))}
                 editable
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={254}
                 placeholder="you@example.com"
                 error={emailError}
                 style={styles.input}
@@ -341,10 +362,12 @@ export default function Profile() {
               <TextField
                 label={t('Phone')}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={value => setPhone(sanitizePhone(value))}
                 editable
                 keyboardType="phone-pad"
+                maxLength={16}
                 placeholder={t('Enter your phone number')}
+                error={phoneError}
                 style={styles.input}
               />
             </View>
@@ -427,6 +450,7 @@ export default function Profile() {
                 value={address}
                 onChangeText={onChangeAddressText}
                 editable
+                maxLength={ADDRESS_MAX}
                 placeholder={t('e.g. Rajajipuram, Lucknow, Uttar Pradesh')}
                 style={styles.input}
               />

@@ -30,6 +30,30 @@ import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { NotificationBellButton, useNotifications } from '../../context/NotificationContext';
 import { getCurrentLocation, requestLocationPermission } from '../../utils/location';
+import {
+  CARD_NUMBER_DIGITS,
+  CVV_MAX,
+  GENDER_OPTIONS,
+  matchGenderOption,
+  NAME_MAX,
+  PURPOSE_MAX,
+  PURPOSE_MIN,
+  sanitizeCardNumber,
+  sanitizeCvv,
+  sanitizeEmail,
+  sanitizeExpiry,
+  sanitizeName,
+  sanitizePhone,
+  sanitizeText,
+  validateCardNumber,
+  validateCvv,
+  validateEmail,
+  validateExpiry,
+  validateGender,
+  validateName,
+  validatePhone,
+  validateRequiredText,
+} from '../../utils/validation';
 import { colors } from '../../theme/colors';
 import { Icon, type IconName } from '../../components/Icon';
 import { RatingStat } from '../../components/StarRating';
@@ -114,7 +138,7 @@ export default function Home() {
 
   const [bookingDates, setBookingDates] = useState<BookingDate[]>(() => buildBookingDates());
   const [selectedDate, setSelectedDate] = useState(() => buildBookingDates()[0].date);
-  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(() => buildDaySlots(buildBookingDates()[0].date));
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
@@ -191,11 +215,14 @@ export default function Home() {
 
   useEffect(() => {
     if (userDetail) {
-      if (userDetail.name) setPayName(prev => prev || userDetail.name);
-      if (userDetail.email) setPayEmail(prev => prev || userDetail.email);
+      if (userDetail.name) setPayName(prev => prev || sanitizeName(userDetail.name));
+      if (userDetail.email) setPayEmail(prev => prev || sanitizeEmail(userDetail.email));
       const phoneNum = userDetail.phone || userDetail.phoneNumber || userDetail.mobile || userDetail.phone_number || userDetail.contact;
-      if (phoneNum) setPayPhone(prev => prev || String(phoneNum));
-      if (userDetail.gender) setPayGender(prev => prev || userDetail.gender);
+      if (phoneNum) setPayPhone(prev => prev || sanitizePhone(String(phoneNum)));
+      // Only prefill a gender the chips can actually represent.
+      if (matchGenderOption(userDetail.gender)) {
+        setPayGender(prev => prev || matchGenderOption(userDetail.gender)!);
+      }
     }
   }, [userDetail?.name, userDetail?.email, userDetail?.phone]);
 
@@ -478,16 +505,17 @@ export default function Home() {
     setShowServiceModal(true);
   }
 
-  const loadSlots = useCallback(async (serviceId: string, date: string) => {
+  const loadSlots = useCallback(async (service: ServiceListing, date: string) => {
     setSlotsLoading(true);
-    setTimeSlots(buildDaySlots(date));
+    // The provider's own slots, so something is on screen before the call lands.
+    setTimeSlots(buildDaySlots(date, service.service_slot));
     try {
-      const res: any = await appointmentApi.getAvailableSlots(serviceId, { date });
+      const res: any = await appointmentApi.getAvailableSlots(service._id, { date });
       const data = res?.data;
       if (Array.isArray(data?.dates) && data.dates.length > 0) setBookingDates(data.dates);
-      if (Array.isArray(data?.slots) && data.slots.length > 0) setTimeSlots(data.slots);
+      if (Array.isArray(data?.slots)) setTimeSlots(data.slots);
     } catch {
-      // Offline grid already rendered.
+      // Offline list already rendered.
     } finally {
       setSlotsLoading(false);
     }
@@ -495,7 +523,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!showSlotModal || !selectedService) return;
-    loadSlots(selectedService._id, selectedDate);
+    loadSlots(selectedService, selectedDate);
   }, [showSlotModal, selectedService, selectedDate, loadSlots]);
 
   function onBookAppointment() {
@@ -504,6 +532,7 @@ export default function Home() {
     setBookingDates(dates);
     setSelectedDate(dates[0].date);
     setSelectedTime(null);
+    setTimeSlots([]);
     setShowServiceModal(false);
     setShowSlotModal(true);
   }
@@ -517,11 +546,12 @@ export default function Home() {
   function onConfirmSlot() {
     setShowSlotModal(false);
     if (userDetail) {
-      if (!payName && userDetail.name) setPayName(userDetail.name);
-      if (!payEmail && userDetail.email) setPayEmail(userDetail.email);
+      if (!payName && userDetail.name) setPayName(sanitizeName(userDetail.name));
+      if (!payEmail && userDetail.email) setPayEmail(sanitizeEmail(userDetail.email));
       const phoneNum = userDetail.phone || userDetail.phoneNumber || userDetail.mobile || userDetail.phone_number || userDetail.contact;
-      if (!payPhone && phoneNum) setPayPhone(String(phoneNum));
-      if (!payGender && userDetail.gender) setPayGender(userDetail.gender);
+      if (!payPhone && phoneNum) setPayPhone(sanitizePhone(String(phoneNum)));
+      const knownGender = matchGenderOption(userDetail.gender);
+      if (!payGender && knownGender) setPayGender(knownGender);
     }
     setShowPaymentModal(true);
   }
@@ -536,30 +566,55 @@ export default function Home() {
   const [cardExpiry, setCardExpiry] = useState('');
   const [cardCvv, setCardCvv] = useState('');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [paySubmitted, setPaySubmitted] = useState(false);
+
+  /** Turns a validator's message key into a translated error, or nothing. */
+  const tr = (key?: string) => (key ? t(key) : undefined);
 
   function onProceedToPayment() {
     setSubmitted(true);
-    if (!payName || !payEmail || !payPhone || !payGender || !payPurpose) {
+    if (
+      validateName(payName) ||
+      validateEmail(payEmail) ||
+      validatePhone(payPhone) ||
+      validateGender(payGender) ||
+      validatePurpose(payPurpose)
+    ) {
       return;
     }
     setPaymentError(null);
     setPaymentStep('payment');
   }
 
+  function validatePurpose(value: string) {
+    return validateRequiredText(
+      value,
+      'Purpose of visit is required.',
+      PURPOSE_MIN,
+      PURPOSE_MAX,
+      'Purpose of visit is too short.',
+    );
+  }
+
+  /** First failing rule for the currently selected payment method. */
+  function paymentMethodError(): string | undefined {
+    if (selectedMethod === 'Orange Money') {
+      return validatePhone(accountNumber, 'Mobile/Account Number is required.');
+    }
+    if (selectedMethod === 'PayPal') {
+      return validateEmail(paypalEmail, 'PayPal Email is required.');
+    }
+    return validateCardNumber(cardNumber) || validateExpiry(cardExpiry) || validateCvv(cardCvv);
+  }
+
   async function onSubmitPayment() {
+    setPaySubmitted(true);
+    const methodError = paymentMethodError();
+    if (methodError) {
+      setPaymentError(t(methodError));
+      return;
+    }
     setPaymentError(null);
-    if (selectedMethod === 'Orange Money' && !accountNumber) {
-      setPaymentError(t('Mobile/Account Number is required.'));
-      return;
-    }
-    if (selectedMethod === 'PayPal' && !paypalEmail) {
-      setPaymentError(t('PayPal Email is required.'));
-      return;
-    }
-    if ((selectedMethod === 'Credit Card' || selectedMethod === 'Stripe') && (!cardNumber || !cardExpiry || !cardCvv)) {
-      setPaymentError(t('Complete card details are required.'));
-      return;
-    }
 
     if (!selectedService || !selectedTime) return;
 
@@ -600,6 +655,7 @@ export default function Home() {
 
       setShowPaymentModal(false);
       setSubmitted(false);
+      setPaySubmitted(false);
       setPaymentStep('details');
       setPayName('');
       setPayEmail('');
@@ -618,6 +674,7 @@ export default function Home() {
         setSelectedTime(null);
         setShowPaymentModal(false);
         setPaymentStep('details');
+        setPaySubmitted(false);
         setShowSlotModal(true);
       }
       showToast(err instanceof ApiError ? err.message : t('Something went wrong'));
@@ -634,11 +691,21 @@ export default function Home() {
     });
   }
 
-  const nameError = submitted && !payName ? t('Name is required.') : undefined;
-  const emailError = submitted && !payEmail ? t('Email is required.') : undefined;
-  const phoneError = submitted && !payPhone ? t('Phone is required.') : undefined;
-  const genderError = submitted && !payGender ? t('Gender is required.') : undefined;
-  const purposeError = submitted && !payPurpose ? t('Purpose of visit is required.') : undefined;
+  const nameError = submitted ? tr(validateName(payName)) : undefined;
+  const emailError = submitted ? tr(validateEmail(payEmail)) : undefined;
+  const phoneError = submitted ? tr(validatePhone(payPhone)) : undefined;
+  const genderError = submitted ? tr(validateGender(payGender)) : undefined;
+  const purposeError = submitted ? tr(validatePurpose(payPurpose)) : undefined;
+
+  const accountNumberError = paySubmitted
+    ? tr(validatePhone(accountNumber, 'Mobile/Account Number is required.'))
+    : undefined;
+  const paypalEmailError = paySubmitted
+    ? tr(validateEmail(paypalEmail, 'PayPal Email is required.'))
+    : undefined;
+  const cardNumberError = paySubmitted ? tr(validateCardNumber(cardNumber)) : undefined;
+  const cardExpiryError = paySubmitted ? tr(validateExpiry(cardExpiry)) : undefined;
+  const cardCvvError = paySubmitted ? tr(validateCvv(cardCvv)) : undefined;
 
   return (
     <View style={styles.flex}>
@@ -857,7 +924,7 @@ export default function Home() {
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{t('Select Date & Time')}</Text>
             <Text style={styles.sheetSubtitle}>
-              {t('Appointments run every 15 minutes, 10:00 AM to 5:45 PM')}
+              {t('Pick one of the times this agency has opened for bookings')}
             </Text>
 
             <Text style={styles.slotSectionLabel}>{t('Select Date')}</Text>
@@ -888,7 +955,7 @@ export default function Home() {
               {slotsLoading ? <ActivityIndicator size="small" color={colors.primaryAlt} /> : null}
             </View>
 
-            {/* Capped height so the 32 slots stay scrollable on short screens. */}
+            {/* Capped height so a long slot list stays scrollable on short screens. */}
             <ScrollView
               style={[styles.slotScroll, { maxHeight: Math.max(160, windowHeight * 0.32) }]}
               contentContainerStyle={styles.slotGrid}
@@ -922,7 +989,12 @@ export default function Home() {
               })}
             </ScrollView>
 
-            {!slotsLoading && timeSlots.every(slot => !slot.isAvailable) ? (
+            {!slotsLoading && timeSlots.length === 0 ? (
+              <Text style={styles.slotEmptyText}>
+                {t('This agency has not opened any time slots yet.')}
+              </Text>
+            ) : null}
+            {!slotsLoading && timeSlots.length > 0 && timeSlots.every(slot => !slot.isAvailable) ? (
               <Text style={styles.slotEmptyText}>
                 {t('No slots left for this day. Please pick another date.')}
               </Text>
@@ -979,33 +1051,38 @@ export default function Home() {
                 <TextField
                   label={t('Full Name')}
                   value={payName}
-                  onChangeText={setPayName}
+                  onChangeText={value => setPayName(sanitizeName(value))}
+                  autoCapitalize="words"
+                  maxLength={NAME_MAX}
                   placeholder={t('Enter full name')}
                   error={nameError}
                 />
                 <TextField
                   label={t('Email Address')}
                   value={payEmail}
-                  onChangeText={setPayEmail}
+                  onChangeText={value => setPayEmail(sanitizeEmail(value))}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={254}
                   placeholder="user@example.com"
                   error={emailError}
                 />
                 <TextField
                   label={t('Phone Number')}
                   value={payPhone}
-                  onChangeText={setPayPhone}
+                  onChangeText={value => setPayPhone(sanitizePhone(value))}
                   keyboardType="phone-pad"
+                  maxLength={16}
                   placeholder="+1 234 567 890"
                   error={phoneError}
                 />
 
-                {/* Quick Gender Chips */}
+                {/* Quick Gender Chips (the only way to set gender) */}
                 <View style={styles.quickFieldGroup}>
                   <Text style={styles.fieldLabel}>{t('Gender')}</Text>
                   <View style={styles.chipRow}>
-                    {['Male', 'Female', 'Other'].map(g => {
+                    {GENDER_OPTIONS.map(g => {
                       const isSelected = payGender.toLowerCase() === g.toLowerCase();
                       return (
                         <TouchableOpacity
@@ -1019,13 +1096,7 @@ export default function Home() {
                       );
                     })}
                   </View>
-                  <TextField
-                    label=""
-                    value={payGender}
-                    onChangeText={setPayGender}
-                    placeholder={t('Or type gender')}
-                    error={genderError}
-                  />
+                  {genderError ? <Text style={styles.inlineError}>{genderError}</Text> : null}
                 </View>
 
                 {/* Quick Purpose Suggestions */}
@@ -1049,7 +1120,8 @@ export default function Home() {
                   <TextField
                     label=""
                     value={payPurpose}
-                    onChangeText={setPayPurpose}
+                    onChangeText={value => setPayPurpose(sanitizeText(value, PURPOSE_MAX))}
+                    maxLength={PURPOSE_MAX}
                     placeholder={t('Describe purpose of visit...')}
                     error={purposeError}
                   />
@@ -1119,6 +1191,7 @@ export default function Home() {
                         ]}
                         onPress={() => {
                           setPaymentError(null);
+                          setPaySubmitted(false);
                           setSelectedMethod(item.key as PaymentMethod);
                         }}>
                         <Icon name={item.iconName as IconName} size={18} color={active ? item.color : colors.gray} />
@@ -1136,9 +1209,11 @@ export default function Home() {
                     <TextField
                       label={t('Orange Money Account / Mobile No.')}
                       value={accountNumber}
-                      onChangeText={value => { setPaymentError(null); setAccountNumber(value); }}
+                      onChangeText={value => { setPaymentError(null); setAccountNumber(sanitizePhone(value)); }}
                       keyboardType="phone-pad"
+                      maxLength={16}
                       placeholder="+225 0700000000"
+                      error={accountNumberError}
                     />
                   </View>
                 )}
@@ -1148,10 +1223,13 @@ export default function Home() {
                     <TextField
                       label={t('PayPal Email Address')}
                       value={paypalEmail}
-                      onChangeText={value => { setPaymentError(null); setPaypalEmail(value); }}
+                      onChangeText={value => { setPaymentError(null); setPaypalEmail(sanitizeEmail(value)); }}
                       keyboardType="email-address"
                       autoCapitalize="none"
+                      autoCorrect={false}
+                      maxLength={254}
                       placeholder="user@paypal.com"
+                      error={paypalEmailError}
                     />
                   </View>
                 )}
@@ -1161,27 +1239,35 @@ export default function Home() {
                     <TextField
                       label={t('Card Number')}
                       value={cardNumber}
-                      onChangeText={value => { setPaymentError(null); setCardNumber(value); }}
-                      keyboardType="numeric"
+                      onChangeText={value => { setPaymentError(null); setCardNumber(sanitizeCardNumber(value)); }}
+                      keyboardType="number-pad"
+                      // 16 digits + the 3 grouping spaces.
+                      maxLength={CARD_NUMBER_DIGITS + 3}
                       placeholder="4111 2222 3333 4444"
+                      error={cardNumberError}
                     />
                     <View style={styles.cardInline}>
                       <View style={styles.cardFlex}>
                         <TextField
                           label={t('Expiry (MM/YY)')}
                           value={cardExpiry}
-                          onChangeText={value => { setPaymentError(null); setCardExpiry(value); }}
+                          onChangeText={value => { setPaymentError(null); setCardExpiry(sanitizeExpiry(value)); }}
+                          keyboardType="number-pad"
+                          maxLength={5}
                           placeholder="12/28"
+                          error={cardExpiryError}
                         />
                       </View>
                       <View style={styles.cardFlex}>
                         <TextField
                           label={t('CVV')}
                           value={cardCvv}
-                          onChangeText={value => { setPaymentError(null); setCardCvv(value); }}
-                          keyboardType="numeric"
+                          onChangeText={value => { setPaymentError(null); setCardCvv(sanitizeCvv(value)); }}
+                          keyboardType="number-pad"
+                          maxLength={CVV_MAX}
                           secureTextEntry
                           placeholder="123"
+                          error={cardCvvError}
                         />
                       </View>
                     </View>
@@ -1753,6 +1839,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.textDark,
     marginBottom: 4,
+  },
+  inlineError: {
+    fontSize: 13,
+    color: 'red',
+    marginTop: 6,
   },
   summaryBadgeRow: {
     flexDirection: 'row',

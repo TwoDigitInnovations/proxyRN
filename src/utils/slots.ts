@@ -1,15 +1,17 @@
 import moment from 'moment';
 
 
+// Slot start times come from the provider's own service record, so the only
+// thing fixed here is how far ahead a visitor may book.
 export const SLOT_CONFIG = {
-  openTime: '10:00',
-  lastSlotTime: '17:45',
-  intervalMinutes: 15,
   bookingDays: 5,
 };
 
 export const SLOT_TIME_FORMAT = 'HH:mm';
 export const SLOT_DATE_FORMAT = 'YYYY-MM-DD';
+
+// Providers save 'HH:mm', older records may carry a 12h string.
+const SLOT_INPUT_FORMATS = [SLOT_TIME_FORMAT, 'H:mm', 'h:mm A', 'h:mmA', 'hh:mm A'];
 
 export interface BookingDate {
   date: string;      // YYYY-MM-DD
@@ -27,18 +29,16 @@ export interface TimeSlot {
   isAvailable: boolean;
 }
 
-/** ['10:00', '10:15', ... , '17:45'] */
-export function buildSlotTimes(config = SLOT_CONFIG): string[] {
-  const cursor = moment(config.openTime, SLOT_TIME_FORMAT);
-  const end = moment(config.lastSlotTime, SLOT_TIME_FORMAT);
-  const step = Math.max(1, config.intervalMinutes);
+/** The provider's own slot times, normalised to 'HH:mm', de-duped and sorted. */
+export function normalizeSlotTimes(serviceSlot?: string[] | null): string[] {
+  if (!Array.isArray(serviceSlot)) return [];
 
-  const times: string[] = [];
-  while (cursor.isSameOrBefore(end)) {
-    times.push(cursor.format(SLOT_TIME_FORMAT));
-    cursor.add(step, 'minutes');
-  }
-  return times;
+  const times = new Set<string>();
+  serviceSlot.forEach(value => {
+    const parsed = moment(String(value ?? '').trim(), SLOT_INPUT_FORMATS, true);
+    if (parsed.isValid()) times.add(parsed.format(SLOT_TIME_FORMAT));
+  });
+  return Array.from(times).sort();
 }
 
 /** The next `bookingDays` selectable dates, starting today. */
@@ -60,8 +60,9 @@ export function isSlotPast(date: string, time: string): boolean {
   return moment(`${date} ${time}`, `${SLOT_DATE_FORMAT} ${SLOT_TIME_FORMAT}`).isBefore(moment());
 }
 
-export function buildDaySlots(date: string, config = SLOT_CONFIG): TimeSlot[] {
-  return buildSlotTimes(config).map(time => {
+/** Offline mirror of the server grid: the provider's slots, minus the past ones. */
+export function buildDaySlots(date: string, serviceSlot?: string[] | null): TimeSlot[] {
+  return normalizeSlotTimes(serviceSlot).map(time => {
     const past = isSlotPast(date, time);
     return {
       time,

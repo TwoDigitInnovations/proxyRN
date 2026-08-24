@@ -12,7 +12,15 @@ import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import type { RootStackParamList } from '../../navigation/types';
 
-const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/i;
+import {
+  OTP_LENGTH,
+  sanitizeEmail,
+  sanitizeOtp,
+  sanitizePassword,
+  validateEmail,
+  validateOtp,
+  validatePassword,
+} from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
@@ -28,19 +36,19 @@ export default function ForgotPassword({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const emailError = submitted && !email
-    ? t('Email is required.')
-    : submitted && !EMAIL_PATTERN.test(email)
-    ? t('Invalid your email')
-    : undefined;
-  const otpError = submitted && !otp ? t('OTP is required.') : undefined;
-  const passwordError = submitted && !password ? t('Password is required.') : undefined;
+  const tr = (key?: string) => (key ? t(key) : undefined);
+
+  const emailError = submitted ? tr(validateEmail(email)) : undefined;
+  const otpError = submitted ? tr(validateOtp(otp)) : undefined;
+  const passwordError = submitted ? tr(validatePassword(password)) : undefined;
   const confirmPasswordError = submitted && !confirmPassword
     ? t('Confirm password is required.')
+    : submitted && confirmPassword !== password
+    ? t("Confirm password don't match with password")
     : undefined;
 
   async function sendOTP() {
-    const res: any = await authApi.sendOTP({ email });
+    const res: any = await authApi.sendOTP({ email: email.trim().toLowerCase() });
     showToast(res?.data?.message ?? t('OTP sent'));
     setToken(res?.data?.token ?? '');
     setEmail('');
@@ -70,9 +78,9 @@ export default function ForgotPassword({ navigation }: Props) {
 
   async function handleSubmit() {
     setSubmitted(true);
-    if (step === 1 && (!email || !EMAIL_PATTERN.test(email))) return;
-    if (step === 2 && !otp) return;
-    if (step === 3 && (!password || !confirmPassword)) return;
+    if (step === 1 && validateEmail(email)) return;
+    if (step === 2 && validateOtp(otp)) return;
+    if (step === 3 && (validatePassword(password) || password !== confirmPassword)) return;
 
     showLoading();
     try {
@@ -107,8 +115,10 @@ export default function ForgotPassword({ navigation }: Props) {
             placeholder={t('Enter email')}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={254}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={value => setEmail(sanitizeEmail(value))}
             error={emailError}
           />
         )}
@@ -116,9 +126,11 @@ export default function ForgotPassword({ navigation }: Props) {
         {step === 2 && (
           <TextField
             label={t('OTP')}
-            placeholder="**************"
+            placeholder="******"
+            keyboardType="number-pad"
+            maxLength={OTP_LENGTH}
             value={otp}
-            onChangeText={setOtp}
+            onChangeText={value => setOtp(sanitizeOtp(value))}
             error={otpError}
           />
         )}
@@ -129,16 +141,18 @@ export default function ForgotPassword({ navigation }: Props) {
               label={t('Enter Password')}
               placeholder="**************"
               secureTextEntry
+              maxLength={64}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={value => setPassword(sanitizePassword(value))}
               error={passwordError}
             />
             <TextField
               label={t('Enter Confirm Password')}
               placeholder="**************"
               secureTextEntry
+              maxLength={64}
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={value => setConfirmPassword(sanitizePassword(value))}
               error={confirmPasswordError}
             />
           </>

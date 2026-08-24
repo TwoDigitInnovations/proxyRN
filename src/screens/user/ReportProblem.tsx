@@ -14,6 +14,7 @@ import { colors } from '../../theme/colors';
 import { reportApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useUi } from '../../context/UiContext';
+import { DESCRIPTION_MAX, sanitizeText, SUBJECT_MAX } from '../../utils/validation';
 
 // Values stay in English: they are sent to the API. Only the label is translated.
 const PROBLEM_CATEGORIES = [
@@ -35,11 +36,11 @@ export default function ReportProblem() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   async function handleSubmit() {
-    if (!subject.trim()) {
+    if (subject.trim().length < 5) {
       Alert.alert(t('Validation Error'), t('Please enter a subject or title for your problem.'));
       return;
     }
-    if (!description.trim()) {
+    if (description.trim().length < 10) {
       Alert.alert(t('Validation Error'), t('Please describe your problem in detail.'));
       return;
     }
@@ -107,7 +108,8 @@ export default function ReportProblem() {
         placeholder={t('e.g. Unable to book appointment slot')}
         placeholderTextColor="#9e9e9e"
         value={subject}
-        onChangeText={setSubject}
+        onChangeText={value => setSubject(sanitizeText(value, SUBJECT_MAX))}
+        maxLength={SUBJECT_MAX}
       />
 
       {/* Description Input */}
@@ -120,7 +122,8 @@ export default function ReportProblem() {
         numberOfLines={6}
         textAlignVertical="top"
         value={description}
-        onChangeText={setDescription}
+        onChangeText={value => setDescription(sanitizeText(value, DESCRIPTION_MAX))}
+        maxLength={DESCRIPTION_MAX}
       />
 
       {/* Submit Button */}

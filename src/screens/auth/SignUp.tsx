@@ -15,7 +15,17 @@ import { Icon } from '../../components/Icon';
 import { pickImage } from '../../utils/imagePicker';
 import type { RootStackParamList } from '../../navigation/types';
 
-const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/i;
+import {
+  NAME_MAX,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizePassword,
+  sanitizePhone,
+  validateEmail,
+  validateName,
+  validatePassword,
+  validatePhone,
+} from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignUp'>;
 
@@ -31,14 +41,12 @@ export default function SignUp({ navigation }: Props) {
   const [docAsset, setDocAsset] = useState<Asset | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
-  const nameError = submitted && !fullName ? t('Name is required.') : undefined;
-  const emailError = submitted && !email
-    ? t('Email is required.')
-    : submitted && !EMAIL_PATTERN.test(email)
-    ? t('Invalid your email')
-    : undefined;
-  const phoneError = submitted && !phoneNumber ? t('Mobile Number is required.') : undefined;
-  const passwordError = submitted && !password ? t('Password is required.') : undefined;
+  const tr = (key?: string) => (key ? t(key) : undefined);
+
+  const nameError = submitted ? tr(validateName(fullName)) : undefined;
+  const emailError = submitted ? tr(validateEmail(email)) : undefined;
+  const phoneError = submitted ? tr(validatePhone(phoneNumber, 'Mobile Number is required.')) : undefined;
+  const passwordError = submitted ? tr(validatePassword(password)) : undefined;
   const docError =
     submitted && role === 'provider' && !docAsset
       ? t('Verification document is required for providers.')
@@ -56,7 +64,12 @@ export default function SignUp({ navigation }: Props) {
 
   async function handleSignUp() {
     setSubmitted(true);
-    if (!fullName || !email || !EMAIL_PATTERN.test(email) || !phoneNumber || !password) {
+    if (
+      validateName(fullName) ||
+      validateEmail(email) ||
+      validatePhone(phoneNumber, 'Mobile Number is required.') ||
+      validatePassword(password)
+    ) {
       return;
     }
     if (role === 'provider' && !docAsset) {
@@ -71,8 +84,8 @@ export default function SignUp({ navigation }: Props) {
         : [];
 
       const res: any = await authApi.register({
-        name: fullName,
-        email,
+        name: fullName.trim(),
+        email: email.trim().toLowerCase(),
         phone: phoneNumber,
         password,
         role,
@@ -128,7 +141,9 @@ export default function SignUp({ navigation }: Props) {
             label={t('Name')}
             placeholder={t('Enter Name')}
             value={fullName}
-            onChangeText={setFullName}
+            onChangeText={value => setFullName(sanitizeName(value))}
+            autoCapitalize="words"
+            maxLength={NAME_MAX}
             error={nameError}
           />
           <TextField
@@ -136,24 +151,28 @@ export default function SignUp({ navigation }: Props) {
             placeholder={t('Enter email')}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={254}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={value => setEmail(sanitizeEmail(value))}
             error={emailError}
           />
           <TextField
             label={t('Mobile Number')}
             placeholder={t('Enter Mobile Number')}
             keyboardType="phone-pad"
+            maxLength={16}
             value={phoneNumber}
-            onChangeText={setPhoneNumber}
+            onChangeText={value => setPhoneNumber(sanitizePhone(value))}
             error={phoneError}
           />
           <TextField
             label={t('Password')}
             placeholder="**************"
             secureTextEntry
+            maxLength={64}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={value => setPassword(sanitizePassword(value))}
             error={passwordError}
           />
 

@@ -20,6 +20,16 @@ import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { pickImage, pickMultipleImages } from '../../utils/imagePicker';
 import { colors } from '../../theme/colors';
+import {
+  NAME_MAX,
+  sanitizeEmail,
+  sanitizeName,
+  sanitizePhone,
+  sanitizeText,
+  validateEmail,
+  validateName,
+  validatePhone,
+} from '../../utils/validation';
 import type { UserProfile } from '../../types/models';
 
 const MAX_DOCUMENTS = 5;
@@ -129,21 +139,26 @@ export default function ProfileProvider() {
     setNewDocuments(prev => prev.filter(d => d.uri !== uri));
   }
 
-  const nameError = submitted && !name ? t('Name is required.') : undefined;
-  const emailError = submitted && !email ? t('Email is required.') : undefined;
+  const tr = (key?: string) => (key ? t(key) : undefined);
+
+  // Phone stays optional here, but must be a real number once something is typed.
+  const phoneValidation = phone ? validatePhone(phone) : undefined;
+  const nameError = submitted ? tr(validateName(name)) : undefined;
+  const emailError = submitted ? tr(validateEmail(email)) : undefined;
+  const phoneError = submitted ? tr(phoneValidation) : undefined;
 
   async function handleSave() {
     setSubmitted(true);
-    if (!name || !email) return;
+    if (validateName(name) || validateEmail(email) || phoneValidation) return;
 
     showLoading();
     try {
       const formData = new FormData();
-      formData.append('name', name);
-      formData.append('email', email);
+      formData.append('name', name.trim());
+      formData.append('email', email.trim().toLowerCase());
       formData.append('phone', phone);
-      formData.append('company', company);
-      formData.append('about_us', aboutUs);
+      formData.append('company', company.trim());
+      formData.append('about_us', aboutUs.trim());
       formData.append('oldImages', JSON.stringify(existingDocuments));
       if (newPhoto) {
         formData.append('profile', newPhoto as unknown as Blob);
@@ -230,8 +245,10 @@ export default function ProfileProvider() {
               <TextField
                 label={t('Name')}
                 value={name}
-                onChangeText={setName}
+                onChangeText={value => setName(sanitizeName(value))}
                 editable
+                autoCapitalize="words"
+                maxLength={NAME_MAX}
                 placeholder={t('Enter your full name')}
                 error={nameError}
                 style={styles.input}
@@ -239,10 +256,12 @@ export default function ProfileProvider() {
               <TextField
                 label={t('Email')}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={value => setEmail(sanitizeEmail(value))}
                 editable
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={254}
                 placeholder="you@example.com"
                 error={emailError}
                 style={styles.input}
@@ -250,17 +269,20 @@ export default function ProfileProvider() {
               <TextField
                 label={t('Phone')}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={value => setPhone(sanitizePhone(value))}
                 editable
                 keyboardType="phone-pad"
+                maxLength={16}
                 placeholder={t('Enter your phone number')}
+                error={phoneError}
                 style={styles.input}
               />
               <TextField
                 label={t('Company')}
                 value={company}
-                onChangeText={setCompany}
+                onChangeText={value => setCompany(sanitizeText(value, 80))}
                 editable
+                maxLength={80}
                 placeholder={t('Enter your company or business name')}
                 style={styles.input}
               />

@@ -13,9 +13,12 @@ import { useUi } from '../../context/UiContext';
 import { pickMultipleImages } from '../../utils/imagePicker';
 import { colors } from '../../theme/colors';
 import { GOOGLE_MAPS_API_KEY } from '../../config/maps';
+import { ADDRESS_MAX, sanitizeText, validateRequiredText } from '../../utils/validation';
 import type { Category, ServiceListing } from '../../types/models';
 
 const MAX_PHOTOS = 5;
+const SERVICE_NAME_MAX = 80;
+const SERVICE_DESCRIPTION_MAX = 500;
 
 interface PlacePrediction {
   place_id: string;
@@ -130,8 +133,11 @@ export default function MyServiceProvider() {
     );
   }
 
-  function onChangeAddress(text: string) {
+  function onChangeAddress(raw: string) {
+    const text = sanitizeText(raw, ADDRESS_MAX);
     setAddress(text);
+    // A hand-typed address no longer matches the pinned coordinates.
+    setLocation(null);
     if (predictionsTimer.current) clearTimeout(predictionsTimer.current);
     if (!text) {
       setPredictions([]);
@@ -213,13 +219,34 @@ export default function MyServiceProvider() {
     setNewPhotos(prev => prev.filter(p => p.uri !== uri));
   }
 
-  const nameError = submitted && !serviceName ? t('Service name is required.') : undefined;
-  const addressError = submitted && !address ? t('Address is required.') : undefined;
+  const tr = (key?: string) => (key ? t(key) : undefined);
+
+  const serviceNameValidation = validateRequiredText(
+    serviceName,
+    'Service name is required.',
+    3,
+    SERVICE_NAME_MAX,
+    'Service name is too short.',
+  );
+  const addressValidation = validateRequiredText(
+    address,
+    'Address is required.',
+    5,
+    ADDRESS_MAX,
+    'Enter a complete address.',
+  );
+
+  const nameError = submitted ? tr(serviceNameValidation) : undefined;
+  // The address is only usable once a suggestion pins it to coordinates.
+  const addressError = submitted
+    ? tr(addressValidation) ?? (!location ? t('Pick an address from the suggestions.') : undefined)
+    : undefined;
   const categoryError = submitted && !categoryId ? t('Category is required.') : undefined;
+  const slotsError = submitted && slots.length === 0 ? t('Add at least one service slot.') : undefined;
 
   async function handleSave() {
     setSubmitted(true);
-    if (!serviceName || !address || !categoryId || !location || slots.length === 0) {
+    if (serviceNameValidation || addressValidation || !categoryId || !location || slots.length === 0) {
       return;
     }
 
@@ -227,10 +254,10 @@ export default function MyServiceProvider() {
     try {
       const formData = new FormData();
       if (serviceId) formData.append('id', serviceId);
-      formData.append('service_name', serviceName);
-      formData.append('address', address);
+      formData.append('service_name', serviceName.trim());
+      formData.append('address', address.trim());
       formData.append('category', categoryId);
-      formData.append('service_description', description);
+      formData.append('service_description', description.trim());
       formData.append('service_location', JSON.stringify(location));
       formData.append('service_slot', JSON.stringify(slots));
       formData.append('oldImages', JSON.stringify(existingPhotos));
@@ -345,7 +372,8 @@ export default function MyServiceProvider() {
       <TextField
         label={t('Service Name')}
         value={serviceName}
-        onChangeText={setServiceName}
+        onChangeText={value => setServiceName(sanitizeText(value, SERVICE_NAME_MAX))}
+        maxLength={SERVICE_NAME_MAX}
         error={nameError}
       />
 
@@ -355,6 +383,7 @@ export default function MyServiceProvider() {
           style={styles.input}
           value={address}
           onChangeText={onChangeAddress}
+          maxLength={ADDRESS_MAX}
           placeholder={t('Enter address')}
           placeholderTextColor={colors.border}
         />
@@ -411,9 +440,16 @@ export default function MyServiceProvider() {
         {showTimePicker && Platform.OS === 'ios' && (
           <PrimaryButton title={t('Add')} onPress={addSlot} style={styles.confirmSlotButton} />
         )}
+        {slotsError ? <Text style={styles.error}>{slotsError}</Text> : null}
       </View>
 
-      <TextField label={t('Description')} value={description} onChangeText={setDescription} multiline />
+      <TextField
+        label={t('Description')}
+        value={description}
+        onChangeText={value => setDescription(sanitizeText(value, SERVICE_DESCRIPTION_MAX))}
+        maxLength={SERVICE_DESCRIPTION_MAX}
+        multiline
+      />
 
       <View style={styles.fieldWrap}>
         <Text style={styles.label}>{t('Photos')}</Text>

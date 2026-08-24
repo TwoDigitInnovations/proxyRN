@@ -24,7 +24,7 @@ import { fontFamilies } from '../../theme/typography';
 import { Icon } from '../../components/Icon';
 import type { RootStackParamList } from '../../navigation/types';
 
-const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/i;
+import { sanitizeEmail, sanitizePassword, validateEmail } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignIn'>;
 
@@ -42,22 +42,19 @@ export default function SignIn({ navigation }: Props) {
   const [statusType, setStatusType] = useState<'Suspended' | 'Pending'>('Pending');
   const [statusMessage, setStatusMessage] = useState('');
 
-  const emailError = submitted && !email
-    ? t('Email is required.')
-    : submitted && !EMAIL_PATTERN.test(email)
-    ? t('Invalid your email')
-    : undefined;
+  const emailValidation = validateEmail(email);
+  const emailError = submitted && emailValidation ? t(emailValidation) : undefined;
   const passwordError = submitted && !password ? t('Password is required.') : undefined;
 
   async function handleSignIn() {
     setSubmitted(true);
-    if (!email || !EMAIL_PATTERN.test(email) || !password) {
+    if (emailValidation || !password) {
       return;
     }
 
     showLoading();
     try {
-      const res: any = await authApi.login({ email, password });
+      const res: any = await authApi.login({ email: email.trim().toLowerCase(), password });
       await login(res.token, res.user);
       showToast(t('You are successfully logged in'));
       setSubmitted(false);
@@ -99,16 +96,19 @@ export default function SignIn({ navigation }: Props) {
             placeholder={t('Enter email')}
             keyboardType="email-address"
             autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={254}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={value => setEmail(sanitizeEmail(value))}
             error={emailError}
           />
           <TextField
             label={t('Password')}
             placeholder="**************"
             secureTextEntry
+            maxLength={64}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={value => setPassword(sanitizePassword(value))}
             error={passwordError}
           />
 
