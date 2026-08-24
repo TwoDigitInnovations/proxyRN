@@ -22,6 +22,7 @@ export interface TimeSlot {
   time: string;      // '10:00'
   label: string;     // '10:00 AM'
   booked: number;
+  isBooked: boolean; // someone else already has this slot
   isPast: boolean;
   isAvailable: boolean;
 }
@@ -59,7 +60,6 @@ export function isSlotPast(date: string, time: string): boolean {
   return moment(`${date} ${time}`, `${SLOT_DATE_FORMAT} ${SLOT_TIME_FORMAT}`).isBefore(moment());
 }
 
-/** The offline grid: every slot, with today's expired ones already flagged. */
 export function buildDaySlots(date: string, config = SLOT_CONFIG): TimeSlot[] {
   return buildSlotTimes(config).map(time => {
     const past = isSlotPast(date, time);
@@ -67,6 +67,7 @@ export function buildDaySlots(date: string, config = SLOT_CONFIG): TimeSlot[] {
       time,
       label: moment(time, SLOT_TIME_FORMAT).format('h:mm A'),
       booked: 0,
+      isBooked: false,
       isPast: past,
       isAvailable: !past,
     };

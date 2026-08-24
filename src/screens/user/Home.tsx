@@ -613,6 +613,13 @@ export default function Home() {
       setCardCvv('');
       navigation.navigate('PaymentSuccess', { appointmentId: res?.data?._id });
     } catch (err) {
+      // 409: somebody took the slot while this booking was being filled in.
+      if (err instanceof ApiError && err.status === 409) {
+        setSelectedTime(null);
+        setShowPaymentModal(false);
+        setPaymentStep('details');
+        setShowSlotModal(true);
+      }
       showToast(err instanceof ApiError ? err.message : t('Something went wrong'));
     } finally {
       hideLoading();
@@ -905,9 +912,11 @@ export default function Home() {
                         styles.dateChipText,
                         isSelected && styles.dateChipTextActive,
                         isDisabled && styles.slotChipTextDisabled,
+                        slot.isBooked && styles.slotChipTextBooked,
                       ]}>
                       {slot.label || formatSlotLabel(slot.time)}
                     </Text>
+                    {slot.isBooked ? <Text style={styles.slotTakenTag}>{t('Booked')}</Text> : null}
                   </TouchableOpacity>
                 );
               })}
@@ -918,6 +927,7 @@ export default function Home() {
                 {t('No slots left for this day. Please pick another date.')}
               </Text>
             ) : null}
+            <Text style={styles.slotHintText}>{t('Each slot is for one visitor only.')}</Text>
 
             <PrimaryButton
               title={t('Continue to Booking Details')}
@@ -1632,6 +1642,20 @@ const styles = StyleSheet.create({
   slotChipTextDisabled: {
     color: '#B6BBC4',
     textDecorationLine: 'line-through',
+  },
+  slotChipTextBooked: {
+    textDecorationLine: 'none',
+  },
+  slotTakenTag: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#B6BBC4',
+    marginTop: 2,
+  },
+  slotHintText: {
+    fontSize: 12,
+    color: colors.gray,
+    marginTop: 10,
   },
   slotEmptyText: {
     fontSize: 13,

@@ -105,6 +105,8 @@
   "Appointments run every 15 minutes, 10:00 AM to 5:45 PM": "Les rendez-vous ont lieu toutes les 15 minutes, de 10h00 à 17h45",
   "Select Date": "Choisir la date",
   "Select Time": "Choisir l'heure",
+  "Booked": "Réservé",
+  "Each slot is for one visitor only.": "Chaque créneau est réservé à un seul visiteur.",
   "No slots left for this day. Please pick another date.": "Aucun créneau disponible ce jour-là. Veuillez choisir une autre date.",
   "Continue to Booking Details": "Continuer vers les détails de la réservation",
   "Visitor Details": "Informations du visiteur",
