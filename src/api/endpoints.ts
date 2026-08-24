@@ -87,6 +87,8 @@ export const appointmentApi = {
   getHistoryByProviderId: (id: string, params: PageParams) =>
     apiClient.get(`appointment/getHistoryByProviderId/${id}`, params),
   getVisitorsStatus: () => apiClient.get('appointment/getVisitorsStatus'),
+  getAvailableSlots: (serviceId: string, params?: { date?: string }) =>
+    apiClient.get(`appointment/getAvailableSlots/${serviceId}`, params),
 };
 
 export interface CreateReviewPayload {

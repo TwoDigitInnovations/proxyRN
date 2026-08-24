@@ -3,7 +3,7 @@ import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Touchabl
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { launchImageLibrary, type Asset } from 'react-native-image-picker';
+import type { Asset } from 'react-native-image-picker';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
@@ -12,6 +12,7 @@ import { ApiError } from '../../api/client';
 import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import { Icon } from '../../components/Icon';
+import { pickImage } from '../../utils/imagePicker';
 import type { RootStackParamList } from '../../navigation/types';
 
 const EMAIL_PATTERN = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/i;
@@ -44,14 +45,13 @@ export default function SignUp({ navigation }: Props) {
       : undefined;
 
   async function handlePickDocument() {
-    try {
-      const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.8, includeBase64: true });
-      if (result.assets?.[0]) {
-        setDocAsset(result.assets[0]);
-      }
-    } catch {
+    const asset = await pickImage({ maxWidth: 1280, maxHeight: 1280, quality: 0.7, includeBase64: true });
+    if (!asset) return;
+    if (!asset.base64) {
       showToast(t('Unable to pick document photo'));
+      return;
     }
+    setDocAsset(asset);
   }
 
   async function handleSignUp() {
@@ -66,14 +66,9 @@ export default function SignUp({ navigation }: Props) {
 
     showLoading();
     try {
-      let docPayload: string[] = [];
-      if (docAsset) {
-        if (docAsset.base64) {
-          docPayload.push(`data:${docAsset.type || 'image/jpeg'};base64,${docAsset.base64}`);
-        } else if (docAsset.uri) {
-          docPayload.push(docAsset.uri);
-        }
-      }
+      const docPayload: string[] = docAsset?.base64
+        ? [`data:${docAsset.type || 'image/jpeg'};base64,${docAsset.base64}`]
+        : [];
 
       const res: any = await authApi.register({
         name: fullName,
@@ -189,7 +184,7 @@ export default function SignUp({ navigation }: Props) {
                     <Icon name="file-text" size={24} color={colors.primaryAlt} />
                   </View>
                   <Text style={styles.uploadTitle}>{t('Attach ID Document / License')}</Text>
-                  <Text style={styles.uploadSub}>{t('Tap to browse photo gallery')}</Text>
+                  <Text style={styles.uploadSub}>{t('Tap to take a photo or browse your gallery')}</Text>
                 </TouchableOpacity>
               )}
 

@@ -102,6 +102,10 @@
   "{{people}} people ahead • ~{{minutes}} mins wait": "{{people}} personnes devant vous • ~{{minutes}} min d'attente",
 
   "Select Date & Time": "Choisir la date et l'heure",
+  "Appointments run every 15 minutes, 10:00 AM to 5:45 PM": "Les rendez-vous ont lieu toutes les 15 minutes, de 10h00 à 17h45",
+  "Select Date": "Choisir la date",
+  "Select Time": "Choisir l'heure",
+  "No slots left for this day. Please pick another date.": "Aucun créneau disponible ce jour-là. Veuillez choisir une autre date.",
   "Continue to Booking Details": "Continuer vers les détails de la réservation",
   "Visitor Details": "Informations du visiteur",
   "Review or update your details for this booking": "Vérifiez ou modifiez vos informations pour cette réservation",
@@ -360,5 +364,14 @@
   "Fair": "Correct",
   "Good": "Bien",
   "Very Good": "Très bien",
-  "Excellent": "Excellent"
+  "Excellent": "Excellent",
+  "Tap to take a photo or browse your gallery": "Appuyez pour prendre une photo ou parcourir votre galerie",
+  "Camera access": "Accès à l'appareil photo",
+  "Proxy needs your camera to take document and profile photos.": "Proxy a besoin de votre appareil photo pour prendre des photos de documents et de profil.",
+  "Enable camera access for Proxy in Settings to take a photo.": "Activez l'accès à l'appareil photo pour Proxy dans les Réglages pour prendre une photo.",
+  "Open Settings": "Ouvrir les réglages",
+  "Photo unavailable": "Photo indisponible",
+  "No camera is available on this device.": "Aucun appareil photo n'est disponible sur cet appareil.",
+  "Permission denied. Allow photo access for Proxy in Settings.": "Autorisation refusée. Autorisez l'accès aux photos pour Proxy dans les Réglages.",
+  "Could not open the photo picker.": "Impossible d'ouvrir le sélecteur de photos."
 }

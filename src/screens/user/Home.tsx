@@ -11,6 +11,7 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import MapView, { Marker, Polyline, Region } from 'react-native-maps';
@@ -35,8 +36,15 @@ import { RatingStat } from '../../components/StarRating';
 import { GOOGLE_MAPS_API_KEY } from '../../config/maps';
 import type { Category, ServiceListing } from '../../types/models';
 import type { RootStackParamList } from '../../navigation/types';
-
-const DATE_LIST = Array.from({ length: 4 }, (_, i) => moment().add(i, 'days').format('DD/MM/YYYY'));
+import {
+  SLOT_DATE_FORMAT,
+  SLOT_TIME_FORMAT,
+  buildBookingDates,
+  buildDaySlots,
+  formatSlotLabel,
+  type BookingDate,
+  type TimeSlot,
+} from '../../utils/slots';
 
 interface PlacePrediction {
   place_id: string;
@@ -84,6 +92,7 @@ export default function Home() {
   const { showLoading, hideLoading, showToast } = useUi();
   const { addNotification } = useNotifications();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const mapRef = useRef<MapView>(null);
 
   const [region, setRegion] = useState<Region | null>(null);
@@ -103,7 +112,10 @@ export default function Home() {
   const [showSlotModal, setShowSlotModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(DATE_LIST[0]);
+  const [bookingDates, setBookingDates] = useState<BookingDate[]>(() => buildBookingDates());
+  const [selectedDate, setSelectedDate] = useState(() => buildBookingDates()[0].date);
+  const [timeSlots, setTimeSlots] = useState<TimeSlot[]>(() => buildDaySlots(buildBookingDates()[0].date));
+  const [slotsLoading, setSlotsLoading] = useState(false);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const [payName, setPayName] = useState('');
@@ -412,7 +424,7 @@ export default function Home() {
 
   async function onMarkerPress(service: ServiceListing) {
     setSelectedService(service);
-    setSelectedTime(service.service_slot?.[0] ?? null);
+    setSelectedTime(null);
 
     if (region) {
       const originLat = region.latitude;
@@ -466,9 +478,40 @@ export default function Home() {
     setShowServiceModal(true);
   }
 
+  const loadSlots = useCallback(async (serviceId: string, date: string) => {
+    setSlotsLoading(true);
+    setTimeSlots(buildDaySlots(date));
+    try {
+      const res: any = await appointmentApi.getAvailableSlots(serviceId, { date });
+      const data = res?.data;
+      if (Array.isArray(data?.dates) && data.dates.length > 0) setBookingDates(data.dates);
+      if (Array.isArray(data?.slots) && data.slots.length > 0) setTimeSlots(data.slots);
+    } catch {
+      // Offline grid already rendered.
+    } finally {
+      setSlotsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!showSlotModal || !selectedService) return;
+    loadSlots(selectedService._id, selectedDate);
+  }, [showSlotModal, selectedService, selectedDate, loadSlots]);
+
   function onBookAppointment() {
+    // Rebuild the window in case the app has been open since before midnight.
+    const dates = buildBookingDates();
+    setBookingDates(dates);
+    setSelectedDate(dates[0].date);
+    setSelectedTime(null);
     setShowServiceModal(false);
     setShowSlotModal(true);
+  }
+
+  function onSelectDate(date: string) {
+    if (date === selectedDate) return;
+    setSelectedDate(date);
+    setSelectedTime(null);
   }
 
   function onConfirmSlot() {
@@ -520,7 +563,7 @@ export default function Home() {
 
     if (!selectedService || !selectedTime) return;
 
-    const fullDate = moment(`${selectedDate},${selectedTime}`, 'DD/MM/YYYY,HH:mm').format();
+    const fullDate = moment(`${selectedDate} ${selectedTime}`, `${SLOT_DATE_FORMAT} ${SLOT_TIME_FORMAT}`).format();
     const txnId = `TXN-${Date.now().toString().slice(-6)}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     showLoading();
@@ -531,8 +574,8 @@ export default function Home() {
         phone: payPhone,
         gender: payGender,
         purpose_of_visit: payPurpose,
-        date: moment(selectedDate, 'DD/MM/YYYY').format(),
-        time: moment(selectedTime, 'HH:mm').format('h:mm A'),
+        date: moment(selectedDate, SLOT_DATE_FORMAT).format(),
+        time: formatSlotLabel(selectedTime),
         service: selectedService._id,
         full_date: fullDate,
         service_provider: selectedService.user._id,
@@ -549,8 +592,8 @@ export default function Home() {
         t('Your ticket #{{ticket}} for {{service}} on {{date}} at {{time}} is confirmed.', {
           ticket: ticketNum,
           service: selectedService.service_name,
-          date: selectedDate,
-          time: selectedTime,
+          date: moment(selectedDate, SLOT_DATE_FORMAT).format('DD MMM YYYY'),
+          time: formatSlotLabel(selectedTime),
         }),
         'success',
       );
@@ -806,28 +849,76 @@ export default function Home() {
           <View style={[styles.sheet, { paddingBottom: 24 + insets.bottom }]}>
             <View style={styles.sheetHandle} />
             <Text style={styles.sheetTitle}>{t('Select Date & Time')}</Text>
-            <View style={styles.chipRow}>
-              {DATE_LIST.map(date => (
-                <TouchableOpacity
-                  key={date}
-                  style={[styles.dateChip, selectedDate === date && styles.dateChipActive]}
-                  onPress={() => setSelectedDate(date)}>
-                  <Text style={[styles.dateChipText, selectedDate === date && styles.dateChipTextActive]}>
-                    {moment(date, 'DD/MM/YYYY').format('DD MMM')}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.sheetSubtitle}>
+              {t('Appointments run every 15 minutes, 10:00 AM to 5:45 PM')}
+            </Text>
+
+            <Text style={styles.slotSectionLabel}>{t('Select Date')}</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.dayChipRow}>
+              {bookingDates.map(day => {
+                const isSelected = selectedDate === day.date;
+                return (
+                  <TouchableOpacity
+                    key={day.date}
+                    style={[styles.dayChip, isSelected && styles.dateChipActive]}
+                    onPress={() => onSelectDate(day.date)}>
+                    <Text style={[styles.dayChipWeekday, isSelected && styles.dateChipTextActive]}>
+                      {day.isToday ? t('Today') : day.weekday}
+                    </Text>
+                    <Text style={[styles.dayChipDate, isSelected && styles.dateChipTextActive]}>
+                      {day.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.slotSectionHeader}>
+              <Text style={styles.slotSectionLabel}>{t('Select Time')}</Text>
+              {slotsLoading ? <ActivityIndicator size="small" color={colors.primaryAlt} /> : null}
             </View>
-            <View style={styles.chipRow}>
-              {selectedService?.service_slot?.map(time => (
-                <TouchableOpacity
-                  key={time}
-                  style={[styles.dateChip, selectedTime === time && styles.dateChipActive]}
-                  onPress={() => setSelectedTime(time)}>
-                  <Text style={[styles.dateChipText, selectedTime === time && styles.dateChipTextActive]}>{time}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+
+            {/* Capped height so the 32 slots stay scrollable on short screens. */}
+            <ScrollView
+              style={[styles.slotScroll, { maxHeight: Math.max(160, windowHeight * 0.32) }]}
+              contentContainerStyle={styles.slotGrid}
+              showsVerticalScrollIndicator
+              nestedScrollEnabled>
+              {timeSlots.map(slot => {
+                const isSelected = selectedTime === slot.time;
+                const isDisabled = !slot.isAvailable;
+                return (
+                  <TouchableOpacity
+                    key={slot.time}
+                    disabled={isDisabled}
+                    style={[
+                      styles.slotChip,
+                      isSelected && styles.dateChipActive,
+                      isDisabled && styles.slotChipDisabled,
+                    ]}
+                    onPress={() => setSelectedTime(slot.time)}>
+                    <Text
+                      style={[
+                        styles.dateChipText,
+                        isSelected && styles.dateChipTextActive,
+                        isDisabled && styles.slotChipTextDisabled,
+                      ]}>
+                      {slot.label || formatSlotLabel(slot.time)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {!slotsLoading && timeSlots.every(slot => !slot.isAvailable) ? (
+              <Text style={styles.slotEmptyText}>
+                {t('No slots left for this day. Please pick another date.')}
+              </Text>
+            ) : null}
+
             <PrimaryButton
               title={t('Continue to Booking Details')}
               onPress={onConfirmSlot}
@@ -865,10 +956,12 @@ export default function Home() {
                     <Text style={styles.bookingMiniTitle}>{selectedService.service_name}</Text>
                     <View style={styles.bookingMiniMetaRow}>
                       <Icon name="calendar" size={12} color={colors.primaryAlt} />
-                      <Text style={styles.bookingMiniMetaText}>{selectedDate}</Text>
+                      <Text style={styles.bookingMiniMetaText}>
+                        {moment(selectedDate, SLOT_DATE_FORMAT).format('ddd, DD MMM YYYY')}
+                      </Text>
                       <Text style={styles.bookingDot}>•</Text>
                       <Icon name="clock" size={12} color={colors.primaryAlt} />
-                      <Text style={styles.bookingMiniMetaText}>{selectedTime}</Text>
+                      <Text style={styles.bookingMiniMetaText}>{formatSlotLabel(selectedTime)}</Text>
                     </View>
                   </View>
                 ) : null}
@@ -1474,6 +1567,76 @@ const styles = StyleSheet.create({
   dateChipTextActive: {
     color: colors.white,
     fontWeight: '700',
+  },
+  slotSectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textDarker,
+    marginTop: 16,
+  },
+  slotSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dayChipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingTop: 10,
+    paddingRight: 4,
+  },
+  dayChip: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FAFAFA',
+    alignItems: 'center',
+    minWidth: 64,
+  },
+  dayChipWeekday: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.gray,
+  },
+  dayChipDate: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textDark,
+    marginTop: 2,
+  },
+  slotScroll: {
+    marginTop: 10,
+  },
+  slotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingBottom: 4,
+  },
+  slotChip: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: '#FAFAFA',
+    minWidth: 92,
+    alignItems: 'center',
+  },
+  slotChipDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#EDEFF2',
+  },
+  slotChipTextDisabled: {
+    color: '#B6BBC4',
+    textDecorationLine: 'line-through',
+  },
+  slotEmptyText: {
+    fontSize: 13,
+    color: colors.gray,
+    marginTop: 10,
   },
   summaryCard: {
     backgroundColor: '#FFF8F0',
