@@ -147,6 +147,15 @@ export default function SettingsProvider() {
         />
 
         <SettingsMenuItem
+          iconName="users"
+          iconColor="#0F766E"
+          iconBg="#CCFBF1"
+          label={t('My Staff')}
+          subtitle={t('Add employees and choose the services they can handle')}
+          onPress={() => navigation.navigate('MyStaffProvider')}
+        />
+
+        <SettingsMenuItem
           iconName="star"
           iconColor="#B45309"
           iconBg="#FEF3C7"

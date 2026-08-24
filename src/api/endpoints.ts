@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-export type UserRole = 'user' | 'provider';
+export type UserRole = 'user' | 'provider' | 'staff';
 
 export interface LoginPayload {
   email: string;
@@ -104,6 +104,23 @@ export const reviewApi = {
     apiClient.get(`review/getReviewsByProvider/${id}`, params),
   getProviderRatingSummary: (id: string) => apiClient.get(`review/getProviderRatingSummary/${id}`),
   getMyRatingSummary: () => apiClient.get('review/getMyRatingSummary'),
+};
+
+export interface StaffPayload {
+  name: string;
+  email: string;
+  password?: string;
+  phone?: string;
+  assigned_services: string[];
+}
+
+export const staffApi = {
+  getStaff: () => apiClient.get('staff/getStaff'),
+  createStaff: (data: StaffPayload) => apiClient.post('staff/createStaff', data),
+  updateStaff: (data: StaffPayload & { id: string; isActive?: boolean }) =>
+    apiClient.post('staff/updateStaff', data),
+  deleteStaff: (id: string) => apiClient.delete(`staff/deleteStaff/${id}`),
+  getMyServices: (params?: { date?: string }) => apiClient.get('staff/getMyServices', params),
 };
 
 export const contentApi = {

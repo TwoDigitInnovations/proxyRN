@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -75,6 +75,9 @@ interface PlacePrediction {
   description: string;
 }
 
+// Sentinel category the backend reads as "no category filter".
+const ALL_CATEGORY_ID = 'all';
+
 function decodePolyline(encoded: string): { latitude: number; longitude: number }[] {
   const points: { latitude: number; longitude: number }[] = [];
   let index = 0;
@@ -124,7 +127,7 @@ export default function Home() {
   const [locationError, setLocationError] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(ALL_CATEGORY_ID);
   const [services, setServices] = useState<ServiceListing[]>([]);
 
   const [address, setAddress] = useState('');
@@ -231,9 +234,6 @@ export default function Home() {
       const res: any = await categoryApi.getCategory();
       const list: Category[] = res?.data ?? [];
       setCategories(list);
-      if (list.length > 0) {
-        setSelectedCategoryId(list[0]._id);
-      }
     } catch (err) {
       showToast(err instanceof ApiError ? err.message : t('Unable to load categories'));
     }
@@ -260,6 +260,12 @@ export default function Home() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCategoryId, region?.latitude, region?.longitude]);
+
+  // "All" leads the chip row so the map can open on every nearby service.
+  const categoryChips = useMemo<Category[]>(
+    () => [{ _id: ALL_CATEGORY_ID, name: t('All'), image: '' }, ...categories],
+    [categories, t],
+  );
 
   function onSelectCategory(id: string) {
     setSelectedCategoryId(id);
@@ -743,7 +749,7 @@ export default function Home() {
         {/* Top Category Floating Filter Chips */}
         <View style={styles.categoryBar}>
           <FlatList
-            data={categories}
+            data={categoryChips}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={item => item._id}

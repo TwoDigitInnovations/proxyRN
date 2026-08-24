@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import SettingsProvider from '../screens/provider/SettingsProvider';
 import ProfileProvider from '../screens/provider/ProfileProvider';
 import MyServiceProvider from '../screens/provider/MyServiceProvider';
+import MyStaffProvider from '../screens/provider/MyStaffProvider';
 import type { SettingsProviderStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<SettingsProviderStackParamList>();
@@ -22,6 +23,11 @@ export function SettingsProviderStack() {
         name="MyServiceProvider"
         component={MyServiceProvider}
         options={{ headerShown: true, title: t('My Service') }}
+      />
+      <Stack.Screen
+        name="MyStaffProvider"
+        component={MyStaffProvider}
+        options={{ headerShown: true, title: t('My Staff') }}
       />
     </Stack.Navigator>
   );

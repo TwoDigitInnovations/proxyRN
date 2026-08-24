@@ -44,4 +44,12 @@ export type SettingsProviderStackParamList = {
   SettingsProvider: undefined;
   ProfileProvider: undefined;
   MyServiceProvider: undefined;
+  MyStaffProvider: undefined;
+};
+
+export type StaffTabParamList = {
+  HomeStaff: undefined;
+  MyAppointmentsStaff: undefined;
+  HistoryStaff: undefined;
+  SettingsStaff: undefined;
 };

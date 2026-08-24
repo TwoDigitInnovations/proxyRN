@@ -76,6 +76,37 @@ export interface Appointment {
   createdAt: string;
 }
 
+/** A service as it appears on a staff member's card - name and address only. */
+export interface AssignedService {
+  _id: string;
+  service_name: string;
+  address?: string;
+}
+
+export interface StaffMember {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  profile?: string;
+  role: 'staff';
+  isActive: boolean;
+  assigned_services: AssignedService[];
+  createdAt?: string;
+}
+
+/** One assigned service on the staff home screen, with today's queue numbers. */
+export interface StaffServiceQueue extends AssignedService {
+  service_photo?: string[];
+  service_slot?: string[];
+  queueCount?: number;
+  waitingCount?: number;
+  servingCount?: number;
+  estimatedWaitMinutes?: number;
+  crowdLevel?: 'Low' | 'Moderate' | 'High';
+  nowServing?: string | null;
+}
+
 export interface UserProfile {
   _id: string;
   name: string;
@@ -84,7 +115,7 @@ export interface UserProfile {
   profile?: string;
   about_us?: string;
   company?: string;
-  role: 'user' | 'provider';
+  role: 'user' | 'provider' | 'staff';
   isAvailable?: boolean;
   document?: string[];
   status?: 'Pending' | 'Verified' | 'Suspended';

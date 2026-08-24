@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { UserTabs } from './UserTabs';
 import { ProviderTabs } from './ProviderTabs';
+import { StaffTabs } from './StaffTabs';
 import SignIn from '../screens/auth/SignIn';
 import SignUp from '../screens/auth/SignUp';
 import ForgotPassword from '../screens/auth/ForgotPassword';
@@ -21,7 +22,9 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 function RoleTabs() {
   const { userDetail } = useAuth();
-  return userDetail?.role === 'provider' ? <ProviderTabs /> : <UserTabs />;
+  if (userDetail?.role === 'provider') return <ProviderTabs />;
+  if (userDetail?.role === 'staff') return <StaffTabs />;
+  return <UserTabs />;
 }
 
 export function RootNavigator() {
