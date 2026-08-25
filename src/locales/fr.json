@@ -2,7 +2,6 @@
   "All": "Tout",
   "PREFERENCES": "PRÉFÉRENCES",
   "App Language": "Langue de l'application",
-
   "Home": "Accueil",
   "Appointments": "Rendez-vous",
   "History": "Historique",
@@ -16,7 +15,6 @@
   "Terms & Conditions": "Conditions générales",
   "Terms and Conditions": "Conditions générales",
   "Report a Problem": "Signaler un problème",
-
   "Welcome": "Bienvenue",
   "Please enter your sign in details.": "Veuillez saisir vos identifiants de connexion.",
   "Please enter your sign up details.": "Veuillez saisir vos informations d'inscription.",
@@ -40,7 +38,6 @@
   "OTP verified": "Code OTP vérifié",
   "Password changed": "Mot de passe modifié",
   "You are successfully logged in": "Vous êtes connecté avec succès",
-
   "Name": "Nom",
   "Enter Name": "Saisir le nom",
   "Full Name": "Nom complet",
@@ -53,7 +50,6 @@
   "User": "Utilisateur",
   "Provider": "Prestataire",
   "Visitor": "Visiteur",
-
   "Email is required.": "L'e-mail est obligatoire.",
   "Invalid your email": "Adresse e-mail invalide",
   "Password is required.": "Le mot de passe est obligatoire.",
@@ -66,7 +62,6 @@
   "Gender is required.": "Le genre est obligatoire.",
   "Purpose of visit is required.": "Le motif de la visite est obligatoire.",
   "Something went wrong": "Une erreur est survenue",
-
   "Name is too long.": "Le nom est trop long.",
   "Email is too long.": "L'e-mail est trop long.",
   "Enter a valid email address (e.g. name@example.com).": "Saisissez une adresse e-mail valide (ex. nom@exemple.com).",
@@ -90,7 +85,6 @@
   "Pick an address from the suggestions.": "Choisissez une adresse parmi les suggestions.",
   "Add at least one service slot.": "Ajoutez au moins un créneau de service.",
   "This value is too long.": "Cette valeur est trop longue.",
-
   "Account Suspended": "Compte suspendu",
   "Verification Pending": "Vérification en attente",
   "Your account has been suspended by Admin. Please contact support.": "Votre compte a été suspendu par l'administrateur. Veuillez contacter le support.",
@@ -98,7 +92,6 @@
   "Your account is under verification by Admin.": "Votre compte est en cours de vérification par l'administrateur.",
   "Questions? Reach us at {{email}}": "Des questions ? Contactez-nous à {{email}}",
   "Understand & Close": "J'ai compris, fermer",
-
   "Identity Verification Document *": "Document de vérification d'identité *",
   "Upload ID card, passport, or business license for Admin review.": "Téléversez une pièce d'identité, un passeport ou une licence commerciale pour examen par l'administrateur.",
   "Ready for verification": "Prêt pour la vérification",
@@ -110,7 +103,6 @@
   "Submit for Verification": "Soumettre pour vérification",
   "Registration successful! Your provider account is under review by Admin.": "Inscription réussie ! Votre compte prestataire est en cours d'examen par l'administrateur.",
   "Sign-up process successful.": "Inscription réussie.",
-
   "Search location or agency...": "Rechercher un lieu ou une agence...",
   "Unable to load categories": "Impossible de charger les catégories",
   "Unable to load services": "Impossible de charger les services",
@@ -125,7 +117,6 @@
   "No waiting line • Direct entry available": "Aucune file d'attente • Entrée directe possible",
   "1 person ahead • ~5 mins wait": "1 personne devant vous • ~5 min d'attente",
   "{{people}} people ahead • ~{{minutes}} mins wait": "{{people}} personnes devant vous • ~{{minutes}} min d'attente",
-
   "Select Date & Time": "Choisir la date et l'heure",
   "Pick one of the times this agency has opened for bookings": "Choisissez l'un des créneaux ouverts à la réservation par cet organisme",
   "Select Date": "Choisir la date",
@@ -149,7 +140,6 @@
   "Describe purpose of visit...": "Décrivez le motif de la visite...",
   "Proceed to Payment Checkout": "Passer au paiement",
   "Cancel": "Annuler",
-
   "Payment Checkout": "Paiement",
   "Complete payment to confirm your queue ticket": "Effectuez le paiement pour confirmer votre ticket de file d'attente",
   "TICKET RESERVATION": "RÉSERVATION DE TICKET",
@@ -168,7 +158,6 @@
   "Mobile/Account Number is required.": "Le numéro de mobile/compte est obligatoire.",
   "PayPal Email is required.": "L'e-mail PayPal est obligatoire.",
   "Complete card details are required.": "Les informations complètes de la carte sont obligatoires.",
-
   "Appointment Confirmed": "Rendez-vous confirmé",
   "Appointment Confirmed!": "Rendez-vous confirmé !",
   "Your ticket #{{ticket}} for {{service}} on {{date}} at {{time}} is confirmed.": "Votre ticket n°{{ticket}} pour {{service}} le {{date}} à {{time}} est confirmé.",
@@ -189,7 +178,6 @@
   "Payment Status": "Statut du paiement",
   "Return to Home Screen": "Retour à l'accueil",
   "View All My Appointments": "Voir tous mes rendez-vous",
-
   "Tap a booking to see its full details.": "Appuyez sur une réservation pour voir tous ses détails.",
   "No appointments yet": "Aucun rendez-vous pour le moment",
   "Book a service from the home screen and it will show up here.": "Réservez un service depuis l'accueil et il apparaîtra ici.",
@@ -214,7 +202,6 @@
   "Pending": "En attente",
   "Completed": "Terminé",
   "Not added yet": "Pas encore renseigné",
-
   "Hi, {{name}}": "Bonjour, {{name}}",
   "Accepting Appointments": "Accepter les rendez-vous",
   "Show agency listing as available on map": "Afficher l'agence comme disponible sur la carte",
@@ -224,14 +211,12 @@
   "No pending appointments.": "Aucun rendez-vous en attente.",
   "Unable to load dashboard": "Impossible de charger le tableau de bord",
   "Unable to update availability": "Impossible de mettre à jour la disponibilité",
-
   "Open a request to view visitor details and mark it completed.": "Ouvrez une demande pour voir les informations du visiteur et la marquer comme terminée.",
   "New visitor requests will appear here as soon as they are booked.": "Les nouvelles demandes de visiteurs apparaîtront ici dès leur réservation.",
   "Visitor details": "Informations du visiteur",
   "Mark as Completed": "Marquer comme terminé",
   "Appointment marked as completed": "Rendez-vous marqué comme terminé",
   "This appointment has been completed.": "Ce rendez-vous a été terminé.",
-
   "My Services": "Mes services",
   "{{total}} services created": "{{total}} services créés",
   "+ Add Service": "+ Ajouter un service",
@@ -264,7 +249,6 @@
   "Save Service": "Enregistrer le service",
   "Service updated successfully": "Service mis à jour avec succès",
   "New service created successfully": "Nouveau service créé avec succès",
-
   "Unable to load profile": "Impossible de charger le profil",
   "Profile updated successfully": "Profil mis à jour avec succès",
   "Profile & Location updated successfully": "Profil et localisation mis à jour avec succès",
@@ -296,7 +280,6 @@
   "No address added yet.": "Aucune adresse renseignée.",
   "Save Changes": "Enregistrer les modifications",
   "Edit Profile": "Modifier le profil",
-
   "Validation Error": "Erreur de validation",
   "Please enter a subject or title for your problem.": "Veuillez saisir un objet ou un titre pour votre problème.",
   "Please describe your problem in detail.": "Veuillez décrire votre problème en détail.",
@@ -317,7 +300,6 @@
   "Please describe the issue in detail, including any error messages...": "Décrivez le problème en détail, en incluant les éventuels messages d'erreur...",
   "Submitting Report...": "Envoi du signalement...",
   "Submit Report": "Envoyer le signalement",
-
   "Logout": "Déconnexion",
   "Log Out": "Se déconnecter",
   "Are you sure you want to log out of your account?": "Voulez-vous vraiment vous déconnecter de votre compte ?",
@@ -344,28 +326,23 @@
   "Data privacy & security policies": "Politiques de confidentialité et de sécurité des données",
   "Proxi Mobile App • Version {{version}}": "Application mobile Proxi • Version {{version}}",
   "Proxi Provider App • Version {{version}}": "Application Proxi Prestataire • Version {{version}}",
-
   "Unable to load the latest {{document}}.": "Impossible de charger la dernière version : {{document}}.",
   "Showing the version included with this app.": "Affichage de la version incluse dans l'application.",
   "Retry": "Réessayer",
   "Last updated {{date}}": "Dernière mise à jour : {{date}}",
   "Please also read our Terms & Conditions, which govern your use of the app and the bookings you make through it.": "Veuillez également lire nos Conditions générales, qui régissent votre utilisation de l'application et les réservations que vous y effectuez.",
   "Please also read our Privacy Policy to understand how your personal data, including your location, is handled.": "Veuillez également lire notre Politique de confidentialité pour comprendre comment vos données personnelles, y compris votre localisation, sont traitées.",
-
   "Notifications & Reminders": "Notifications et rappels",
   "Clear All": "Tout effacer",
   "No notifications yet": "Aucune notification pour le moment",
   "Welcome to Proxi": "Bienvenue sur Proxi",
   "Locate nearby agencies, check live queue status & book tickets remotely.": "Localisez les agences à proximité, consultez l'état des files d'attente en direct et réservez vos tickets à distance.",
-
   "Select Photo": "Sélectionner une photo",
   "Select Photos": "Sélectionner des photos",
   "Choose a source": "Choisissez une source",
   "Camera": "Appareil photo",
   "Gallery": "Galerie",
-
   "Book Appointment": "Prendre rendez-vous",
-
   "Reviews & Ratings": "Avis et notes",
   "Rate": "Noter",
   "Rate your visit": "Notez votre visite",
@@ -387,7 +364,6 @@
   "{{total}} reviews": "{{total}} avis",
   "{{average}} average from {{total}} reviews": "Moyenne de {{average}} sur {{total}} avis",
   "Reviews appear here once visitors rate a completed appointment.": "Les avis apparaissent ici dès que les visiteurs notent un rendez-vous terminé.",
-  "Visitor": "Visiteur",
   "Poor": "Médiocre",
   "Fair": "Correct",
   "Good": "Bien",
@@ -402,8 +378,6 @@
   "No camera is available on this device.": "Aucun appareil photo n'est disponible sur cet appareil.",
   "Permission denied. Allow photo access for Proxy in Settings.": "Autorisation refusée. Autorisez l'accès aux photos pour Proxy dans les Réglages.",
   "Could not open the photo picker.": "Impossible d'ouvrir le sélecteur de photos.",
-
-
   "My Staff": "Mon personnel",
   "Add employees and choose the services they can handle": "Ajoutez des employés et choisissez les services dont ils s'occupent",
   "{{total}} staff accounts": "{{total}} comptes de personnel",
@@ -455,5 +429,45 @@
   "{{minutes}} min": "{{minutes}} min",
   "Low": "Faible",
   "Moderate": "Modéré",
-  "High": "Élevé"
+  "High": "Élevé",
+  "Plans & Subscriptions": "Forfaits et abonnements",
+  "Subscription": "Abonnement",
+  "Manage Plans & Subscriptions": "Gérer les forfaits et abonnements",
+  "You are on the Free plan · tap to upgrade": "Vous êtes sur le forfait Gratuit · appuyez pour changer",
+  "{{plan}} plan · renews {{date}}": "Forfait {{plan}} · renouvellement le {{date}}",
+  "Your current plan": "Votre forfait actuel",
+  "Free": "Gratuit",
+  "Renews on": "Renouvellement le",
+  "Days left": "Jours restants",
+  "You are on the Free plan. Choose a subscription below to upgrade your agency.": "Vous êtes sur le forfait Gratuit. Choisissez un abonnement ci-dessous pour faire évoluer votre agence.",
+  "No subscription plans are available right now.": "Aucun forfait d'abonnement n'est disponible pour le moment.",
+  "Current": "Actuel",
+  "Current Plan": "Forfait actuel",
+  "Choose {{plan}}": "Choisir {{plan}}",
+  "Switch to {{plan}}": "Passer à {{plan}}",
+  "for {{days}} days": "pour {{days}} jours",
+  "{{days}} days": "{{days}} jours",
+  "Save {{percent}}% vs monthly": "Économisez {{percent}} % par rapport au mensuel",
+  "BILLING HISTORY": "HISTORIQUE DE FACTURATION",
+  "Cancel Subscription": "Annuler l'abonnement",
+  "Keep Plan": "Conserver le forfait",
+  "Your agency will go back to the Free plan straight away. Continue?": "Votre agence repassera immédiatement au forfait Gratuit. Continuer ?",
+  "Subscription cancelled": "Abonnement annulé",
+  "Complete payment to activate your subscription": "Effectuez le paiement pour activer votre abonnement",
+  "SUBSCRIPTION": "ABONNEMENT",
+  "Plan": "Forfait",
+  "Billing": "Facturation",
+  "Billing Cycle": "Cycle de facturation",
+  "Access period": "Période d'accès",
+  "Pay {{amount}} Now": "Payer {{amount}} maintenant",
+  "Fetching subscription details...": "Récupération des détails de l'abonnement...",
+  "Subscription not found": "Abonnement introuvable",
+  "Back to Plans": "Retour aux forfaits",
+  "{{plan}} plan activated!": "Forfait {{plan}} activé !",
+  "Your agency is subscribed until {{date}}": "Votre agence est abonnée jusqu'au {{date}}",
+  "WHAT IS INCLUDED": "CE QUI EST INCLUS",
+  "Expired": "Expiré",
+  "Cancelled": "Annulé",
+  "Monthly": "Mensuel",
+  "Yearly": "Annuel"
 }

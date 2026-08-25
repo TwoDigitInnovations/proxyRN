@@ -25,6 +25,7 @@ import {
   X,
   Star,
   MessageSquare,
+  Crown,
   LucideProps
 } from 'lucide-react-native';
 
@@ -53,7 +54,8 @@ export type IconName =
   | 'search'
   | 'x'
   | 'star'
-  | 'message-square';
+  | 'message-square'
+  | 'crown';
 
 interface IconProps extends LucideProps {
   name: IconName;
@@ -113,6 +115,8 @@ export function Icon({ name, size = 20, color = '#363636', ...props }: IconProps
       return <Star size={size} color={color} {...props} />;
     case 'message-square':
       return <MessageSquare size={size} color={color} {...props} />;
+    case 'crown':
+      return <Crown size={size} color={color} {...props} />;
     default:
       return <User size={size} color={color} {...props} />;
   }

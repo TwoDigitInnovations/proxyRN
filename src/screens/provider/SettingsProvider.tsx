@@ -2,16 +2,17 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import moment from 'moment';
 import { Text } from '../../components/Text';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StarRating } from '../../components/StarRating';
-import { reviewApi } from '../../api/endpoints';
+import { reviewApi, subscriptionApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
 import { Icon, type IconName } from '../../components/Icon';
-import type { RatingSummary } from '../../types/models';
+import type { RatingSummary, SubscriptionSummary } from '../../types/models';
 import type { RootStackParamList, SettingsProviderStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<SettingsProviderStackParamList & RootStackParamList>;
@@ -51,6 +52,7 @@ export default function SettingsProvider() {
   const { t } = useTranslation();
   const { userDetail, logout } = useAuth();
   const [rating, setRating] = useState<RatingSummary | null>(null);
+  const [plan, setPlan] = useState<SubscriptionSummary | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,6 +63,14 @@ export default function SettingsProvider() {
           if (mounted) setRating(res?.data ?? null);
         } catch {
           // The rating is supplementary: keep the settings screen usable without it.
+        }
+      })();
+      (async () => {
+        try {
+          const res: any = await subscriptionApi.getMySubscription();
+          if (mounted) setPlan(res?.data ?? null);
+        } catch {
+          // Falls back to the label cached on the account at login.
         }
       })();
       return () => {
@@ -87,6 +97,10 @@ export default function SettingsProvider() {
     );
   }
 
+  // "Free" until the provider buys a plan, then the plan's own name.
+  const planLabel = plan?.planLabel || userDetail?.planLabel || userDetail?.plan_name || 'Free';
+  const isSubscribed = plan ? plan.isSubscribed : !!userDetail?.plan_name;
+
   const initialLetter = userDetail?.name ? userDetail.name.charAt(0).toUpperCase() : 'P';
 
   return (
@@ -109,8 +123,16 @@ export default function SettingsProvider() {
           <Text style={styles.userEmail}>
             {userDetail?.email || userDetail?.phone || t('Provider Settings')}
           </Text>
-          <View style={styles.roleTag}>
-            <Text style={styles.roleTagText}>{t('Verified Service Provider')}</Text>
+          <View style={styles.tagRow}>
+            <View style={styles.roleTag}>
+              <Text style={styles.roleTagText}>{t('Verified Service Provider')}</Text>
+            </View>
+            <View style={[styles.planTag, isSubscribed ? styles.planTagPaid : styles.planTagFree]}>
+              <Icon name="crown" size={10} color={isSubscribed ? '#B45309' : colors.gray} />
+              <Text style={[styles.planTagText, isSubscribed && styles.planTagTextPaid]}>
+                {isSubscribed ? planLabel : t('Free')}
+              </Text>
+            </View>
           </View>
           <StarRating rating={rating?.averageRating ?? 0} size={15} style={styles.profileStars} />
         </View>
@@ -153,6 +175,22 @@ export default function SettingsProvider() {
           label={t('My Staff')}
           subtitle={t('Add employees and choose the services they can handle')}
           onPress={() => navigation.navigate('MyStaffProvider')}
+        />
+
+        <SettingsMenuItem
+          iconName="crown"
+          iconColor="#B45309"
+          iconBg="#FEF3C7"
+          label={t('Manage Plans & Subscriptions')}
+          subtitle={
+            isSubscribed
+              ? t('{{plan}} plan · renews {{date}}', {
+                  plan: planLabel,
+                  date: moment(plan?.endDate).format('DD MMM YYYY'),
+                })
+              : t('You are on the Free plan · tap to upgrade')
+          }
+          onPress={() => navigation.navigate('ManagePlansProvider')}
         />
 
         <SettingsMenuItem
@@ -286,13 +324,42 @@ const styles = StyleSheet.create({
     color: colors.gray,
     marginTop: 2,
   },
+  tagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 6,
+  },
   roleTag: {
     alignSelf: 'flex-start',
     backgroundColor: '#DCFCE7',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
-    marginTop: 6,
+  },
+  planTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  planTagFree: {
+    backgroundColor: '#F3F4F6',
+  },
+  planTagPaid: {
+    backgroundColor: '#FEF3C7',
+  },
+  planTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.gray,
+  },
+  planTagTextPaid: {
+    color: '#B45309',
   },
   profileStars: {
     marginTop: 8,

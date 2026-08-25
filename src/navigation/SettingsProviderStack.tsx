@@ -5,6 +5,8 @@ import SettingsProvider from '../screens/provider/SettingsProvider';
 import ProfileProvider from '../screens/provider/ProfileProvider';
 import MyServiceProvider from '../screens/provider/MyServiceProvider';
 import MyStaffProvider from '../screens/provider/MyStaffProvider';
+import ManagePlansProvider from '../screens/provider/ManagePlansProvider';
+import SubscriptionSuccess from '../screens/provider/SubscriptionSuccess';
 import type { SettingsProviderStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<SettingsProviderStackParamList>();
@@ -28,6 +30,16 @@ export function SettingsProviderStack() {
         name="MyStaffProvider"
         component={MyStaffProvider}
         options={{ headerShown: true, title: t('My Staff') }}
+      />
+      <Stack.Screen
+        name="ManagePlansProvider"
+        component={ManagePlansProvider}
+        options={{ headerShown: true, title: t('Plans & Subscriptions') }}
+      />
+      <Stack.Screen
+        name="SubscriptionSuccess"
+        component={SubscriptionSuccess}
+        options={{ headerShown: true, title: t('Subscription') }}
       />
     </Stack.Navigator>
   );

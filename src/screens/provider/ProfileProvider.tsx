@@ -20,6 +20,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { pickImage, pickMultipleImages } from '../../utils/imagePicker';
 import { colors } from '../../theme/colors';
+import { Icon } from '../../components/Icon';
 import {
   NAME_MAX,
   sanitizeEmail,
@@ -30,7 +31,7 @@ import {
   validateName,
   validatePhone,
 } from '../../utils/validation';
-import type { UserProfile } from '../../types/models';
+import type { SubscriptionSummary, UserProfile } from '../../types/models';
 
 const MAX_DOCUMENTS = 5;
 
@@ -61,6 +62,8 @@ export default function ProfileProvider() {
   const [newDocuments, setNewDocuments] = useState<{ uri: string; type: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  // getProfile carries the provider's live plan, so no second request here.
+  const [plan, setPlan] = useState<SubscriptionSummary | null>(null);
 
   const snapshot = useRef<ProfileSnapshot | null>(null);
 
@@ -78,6 +81,7 @@ export default function ProfileProvider() {
           setAboutUs(profile.about_us ?? '');
           setPhotoUri(profile.profile);
           setExistingDocuments(profile.document ?? []);
+          setPlan(profile.subscription ?? null);
         }
       } catch (err) {
         showToast(err instanceof ApiError ? err.message : t('Unable to load profile'));
@@ -232,8 +236,17 @@ export default function ProfileProvider() {
             </Text>
           ) : null}
 
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>{t('Service Provider')}</Text>
+          <View style={styles.heroBadgeRow}>
+            <View style={styles.heroBadge}>
+              <Text style={styles.heroBadgeText}>{t('Service Provider')}</Text>
+            </View>
+            <View style={[styles.planBadge, plan?.isSubscribed ? styles.planBadgePaid : styles.planBadgeFree]}>
+              <Icon name="crown" size={12} color={plan?.isSubscribed ? '#B45309' : colors.grayAlt} />
+              <Text
+                style={[styles.planBadgeText, plan?.isSubscribed && styles.planBadgeTextPaid]}>
+                {plan?.isSubscribed ? plan.planLabel : t('Free')}
+              </Text>
+            </View>
           </View>
 
           {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
@@ -430,13 +443,32 @@ const styles = StyleSheet.create({
   cameraBadgeIcon: { color: colors.white, fontSize: 14, lineHeight: 18 },
   heroName: { fontSize: 20, fontWeight: '700', color: colors.textDarker },
   heroEmail: { fontSize: 13, color: colors.grayAlt, marginTop: 4 },
-  heroBadge: {
+  heroBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
     marginTop: 12,
+  },
+  heroBadge: {
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 20,
     backgroundColor: colors.white,
   },
+  planBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  planBadgeFree: { backgroundColor: colors.white },
+  planBadgePaid: { backgroundColor: '#FEF3C7' },
+  planBadgeText: { fontSize: 12, fontWeight: '700', color: colors.grayAlt },
+  planBadgeTextPaid: { color: '#B45309' },
   heroBadgeText: { fontSize: 12, fontWeight: '600', color: colors.primary },
   heroHint: { fontSize: 12, color: colors.grayAlt, marginTop: 12 },
 

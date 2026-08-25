@@ -1,5 +1,8 @@
 export type Gender = 'Male' | 'Female' | 'Other';
 
+/** The four methods offered at every checkout - ticket booking and plans alike. */
+export type PaymentMethod = 'Orange Money' | 'PayPal' | 'Stripe' | 'Credit Card';
+
 export interface Category {
   _id: string;
   name: string;
@@ -64,7 +67,7 @@ export interface Appointment {
   full_date: string;
   status: 'Pending' | 'Completed';
   ticketNumber?: string;
-  paymentMethod?: 'Orange Money' | 'PayPal' | 'Stripe' | 'Credit Card';
+  paymentMethod?: PaymentMethod;
   paymentAmount?: number;
   transactionId?: string;
   paymentStatus?: 'Completed' | 'Pending';
@@ -107,6 +110,60 @@ export interface StaffServiceQueue extends AssignedService {
   nowServing?: string | null;
 }
 
+export type BillingCycle = 'monthly' | 'yearly';
+
+export type PlanKey = 'starter' | 'business' | 'network';
+
+/** A subscription tier as the admin configured it. */
+export interface Plan {
+  _id: string;
+  key: PlanKey;
+  name: string;
+  tagline?: string;
+  features: string[];
+  monthlyPrice: number;
+  yearlyPrice: number;
+  monthlyDurationDays: number;
+  yearlyDurationDays: number;
+  currency: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+/** One purchase. Plan name, price and features are frozen at purchase time. */
+export interface Subscription {
+  _id: string;
+  provider: string;
+  plan?: Plan | string;
+  planKey?: PlanKey;
+  planName: string;
+  features: string[];
+  billingCycle: BillingCycle;
+  amount: number;
+  currency: string;
+  durationDays: number;
+  startDate: string;
+  endDate: string;
+  status: 'Active' | 'Expired' | 'Cancelled';
+  paymentMethod?: PaymentMethod;
+  paymentAmount?: number;
+  transactionId?: string;
+  paymentStatus?: 'Completed' | 'Pending';
+  createdAt?: string;
+}
+
+/** What the provider is on right now. planLabel is "Free" when unsubscribed. */
+export interface SubscriptionSummary {
+  isSubscribed: boolean;
+  planLabel: string;
+  planKey: PlanKey | null;
+  billingCycle: BillingCycle | null;
+  startDate: string | null;
+  endDate: string | null;
+  daysRemaining: number;
+  subscription: Subscription | null;
+}
+
 export interface UserProfile {
   _id: string;
   name: string;
@@ -124,4 +181,10 @@ export interface UserProfile {
   longitude?: number;
   dob?: string;
   gender?: Gender;
+  // Providers only: a cache of the live subscription, absent when on Free.
+  plan_name?: string | null;
+  plan_cycle?: BillingCycle | null;
+  plan_expires_at?: string | null;
+  planLabel?: string;
+  subscription?: SubscriptionSummary;
 }

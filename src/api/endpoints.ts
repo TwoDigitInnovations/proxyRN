@@ -123,6 +123,23 @@ export const staffApi = {
   getMyServices: (params?: { date?: string }) => apiClient.get('staff/getMyServices', params),
 };
 
+export interface SubscribePayload {
+  planId: string;
+  billingCycle: 'monthly' | 'yearly';
+  paymentMethod: string;
+  paymentAmount: number;
+  transactionId: string;
+  paymentStatus?: string;
+}
+
+export const subscriptionApi = {
+  getPlans: () => apiClient.get('subscription/getPlans'),
+  getMySubscription: () => apiClient.get('subscription/getMySubscription'),
+  getMySubscriptionHistory: () => apiClient.get('subscription/getMySubscriptionHistory'),
+  subscribe: (data: SubscribePayload) => apiClient.post('subscription/subscribe', data),
+  cancelSubscription: () => apiClient.post('subscription/cancelSubscription', {}),
+};
+
 export const contentApi = {
   getContent: () => apiClient.get('content/getContent'),
 };

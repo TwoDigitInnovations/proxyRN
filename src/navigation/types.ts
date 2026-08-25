@@ -45,6 +45,8 @@ export type SettingsProviderStackParamList = {
   ProfileProvider: undefined;
   MyServiceProvider: undefined;
   MyStaffProvider: undefined;
+  ManagePlansProvider: undefined;
+  SubscriptionSuccess: { subscriptionId: string };
 };
 
 export type StaffTabParamList = {
