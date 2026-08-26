@@ -24,7 +24,6 @@ interface VisitorsStatus {
 
 interface ProviderSummary {
   name?: string;
-  company?: string;
 }
 
 /**
@@ -82,7 +81,7 @@ export default function HomeStaff() {
     return <ActivityIndicator style={styles.loading} size="large" color={colors.primary} />;
   }
 
-  const agencyName = provider?.company || provider?.name;
+  const agencyName = provider?.name;
 
   return (
     <ScrollView

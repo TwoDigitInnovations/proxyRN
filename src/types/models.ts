@@ -174,7 +174,6 @@ export interface UserProfile {
   phone?: string;
   profile?: string;
   about_us?: string;
-  company?: string;
   role: 'user' | 'provider' | 'staff';
   permissions?: PermissionKey[];
   isAvailable?: boolean;

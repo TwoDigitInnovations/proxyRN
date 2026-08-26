@@ -26,7 +26,6 @@ import {
   sanitizeEmail,
   sanitizeName,
   sanitizePhone,
-  sanitizeText,
   validateEmail,
   validateName,
   validatePhone,
@@ -39,7 +38,6 @@ interface ProfileSnapshot {
   name: string;
   email: string;
   phone: string;
-  company: string;
   aboutUs: string;
   photoUri?: string;
   documents: string[];
@@ -55,7 +53,6 @@ export default function ProfileProvider() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [company, setCompany] = useState('');
   const [aboutUs, setAboutUs] = useState('');
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
   const [newPhoto, setNewPhoto] = useState<{ uri: string; type: string; name: string } | null>(null);
@@ -78,7 +75,6 @@ export default function ProfileProvider() {
           setName(profile.name ?? '');
           setEmail(profile.email ?? '');
           setPhone(profile.phone ?? '');
-          setCompany(profile.company ?? '');
           setAboutUs(profile.about_us ?? '');
           setPhotoUri(profile.profile);
           setExistingDocuments(profile.document ?? []);
@@ -97,7 +93,7 @@ export default function ProfileProvider() {
   }, []);
 
   function startEditing() {
-    snapshot.current = { name, email, phone, company, aboutUs, photoUri, documents: existingDocuments };
+    snapshot.current = { name, email, phone, aboutUs, photoUri, documents: existingDocuments };
     setIsEdit(true);
   }
 
@@ -107,7 +103,6 @@ export default function ProfileProvider() {
       setName(saved.name);
       setEmail(saved.email);
       setPhone(saved.phone);
-      setCompany(saved.company);
       setAboutUs(saved.aboutUs);
       setPhotoUri(saved.photoUri);
       setExistingDocuments(saved.documents);
@@ -165,7 +160,6 @@ export default function ProfileProvider() {
         formData.append('email', email.trim().toLowerCase());
         formData.append('phone', phone);
       }
-      formData.append('company', company.trim());
       formData.append('about_us', aboutUs.trim());
       formData.append('oldImages', JSON.stringify(existingDocuments));
       if (newPhoto) {
@@ -310,22 +304,12 @@ export default function ProfileProvider() {
                   />
                 </>
               )}
-              <TextField
-                label={t('Company')}
-                value={company}
-                onChangeText={value => setCompany(sanitizeText(value, 80))}
-                editable
-                maxLength={80}
-                placeholder={t('Enter your company or business name')}
-                style={styles.input}
-              />
             </View>
           ) : (
             <View>
               <InfoRow label={t('Name')} value={name} />
               <InfoRow label={t('Email')} value={email} />
-              <InfoRow label={t('Phone')} value={phone} />
-              <InfoRow label={t('Company')} value={company} last />
+              <InfoRow label={t('Phone')} value={phone} last />
             </View>
           )}
         </SectionCard>

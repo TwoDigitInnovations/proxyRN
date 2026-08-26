@@ -68,7 +68,7 @@ export default function SettingsStaff() {
           if (!mounted) return;
           setServices(res?.data?.services ?? []);
           const provider = res?.data?.provider;
-          setAgency(provider?.company || provider?.name || null);
+          setAgency(provider?.name || null);
         } catch {
           // The assigned list is supplementary here: keep settings usable.
         }
