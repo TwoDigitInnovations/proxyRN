@@ -23,6 +23,15 @@ import {
   NAME_MAX,
   PHONE_MAX_DIGITS,
 } from '../../utils/validation';
+import {
+  DEFAULT_STAFF_PERMISSIONS,
+  PERMISSION_GROUPS,
+  PERMISSIONS,
+  effectivePermissions,
+  permissionLabel,
+  togglePermission,
+  type PermissionKey,
+} from '../../utils/permissions';
 import type { ServiceListing, StaffMember } from '../../types/models';
 
 export default function MyStaffProvider() {
@@ -39,6 +48,7 @@ export default function MyStaffProvider() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [permissions, setPermissions] = useState<PermissionKey[]>(DEFAULT_STAFF_PERMISSIONS);
   const [isActive, setIsActive] = useState(true);
   const [submitted, setSubmitted] = useState(false);
 
@@ -68,6 +78,7 @@ export default function MyStaffProvider() {
     setPhone('');
     setPassword('');
     setSelectedServices([]);
+    setPermissions(DEFAULT_STAFF_PERMISSIONS);
     setIsActive(true);
     setSubmitted(false);
   }
@@ -89,6 +100,7 @@ export default function MyStaffProvider() {
     // The password is never sent back: an empty box means "keep the old one".
     setPassword('');
     setSelectedServices((member.assigned_services ?? []).map(item => item._id));
+    setPermissions(effectivePermissions(member));
     setIsActive(member.isActive !== false);
     setSubmitted(false);
     setViewMode('form');
@@ -96,6 +108,10 @@ export default function MyStaffProvider() {
 
   function toggleService(id: string) {
     setSelectedServices(prev => (prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]));
+  }
+
+  function togglePermissionKey(key: PermissionKey) {
+    setPermissions(prev => togglePermission(prev, key));
   }
 
   function handleRemoveStaff(member: StaffMember) {
@@ -137,10 +153,19 @@ export default function MyStaffProvider() {
   const passwordError = submitted ? tr(passwordValidation) : undefined;
   const phoneError = submitted ? tr(phoneValidation) : undefined;
   const servicesError = submitted && selectedServices.length === 0 ? t('Select at least one service.') : undefined;
+  const permissionsError =
+    submitted && permissions.length === 0 ? t('Give this staff member at least one permission.') : undefined;
 
   async function handleSave() {
     setSubmitted(true);
-    if (nameValidation || emailValidation || passwordValidation || phoneValidation || selectedServices.length === 0) {
+    if (
+      nameValidation ||
+      emailValidation ||
+      passwordValidation ||
+      phoneValidation ||
+      selectedServices.length === 0 ||
+      permissions.length === 0
+    ) {
       return;
     }
 
@@ -151,6 +176,7 @@ export default function MyStaffProvider() {
         email: email.trim(),
         phone: phone.trim(),
         assigned_services: selectedServices,
+        permissions,
       };
 
       if (staffId) {
@@ -227,6 +253,20 @@ export default function MyStaffProvider() {
                   {(member.assigned_services ?? []).map(service => (
                     <View key={service._id} style={styles.assignedChip}>
                       <Text style={styles.assignedChipText}>{service.service_name}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <Text style={styles.assignedLabel}>
+                  {t('{{granted}} of {{total}} permissions', {
+                    granted: effectivePermissions(member).length,
+                    total: PERMISSIONS.length,
+                  })}
+                </Text>
+                <View style={styles.chipRow}>
+                  {effectivePermissions(member).map(key => (
+                    <View key={key} style={styles.permissionChip}>
+                      <Text style={styles.permissionChipText}>{t(permissionLabel(key))}</Text>
                     </View>
                   ))}
                 </View>
@@ -313,6 +353,48 @@ export default function MyStaffProvider() {
           })}
         </View>
         {servicesError ? <Text style={styles.error}>{servicesError}</Text> : null}
+      </View>
+
+      <View style={styles.fieldWrap}>
+        <View style={styles.permissionsHeader}>
+          <Text style={styles.label}>{t('Permissions')}</Text>
+          <View style={styles.presetRow}>
+            <TouchableOpacity onPress={() => setPermissions([...PERMISSIONS])}>
+              <Text style={styles.presetLink}>{t('Select all')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setPermissions(DEFAULT_STAFF_PERMISSIONS)}>
+              <Text style={styles.presetLink}>{t('Reset to default')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <Text style={styles.hint}>
+          {t('Choose exactly what this person can do. Anything left off is hidden from their app and refused by the server.')}
+        </Text>
+
+        {PERMISSION_GROUPS.map(group => (
+          <View key={group.title} style={styles.permissionGroup}>
+            <Text style={styles.permissionGroupTitle}>{t(group.title)}</Text>
+            {group.options.map((option, index) => {
+              const granted = permissions.includes(option.key);
+              return (
+                <View
+                  key={option.key}
+                  style={[styles.permissionRow, index < group.options.length - 1 && styles.permissionRowBorder]}>
+                  <View style={styles.permissionText}>
+                    <Text style={styles.permissionLabel}>{t(option.label)}</Text>
+                    <Text style={styles.permissionDescription}>{t(option.description)}</Text>
+                  </View>
+                  <Switch
+                    value={granted}
+                    onValueChange={() => togglePermissionKey(option.key)}
+                    trackColor={{ true: colors.primaryAlt, false: '#D1D5DB' }}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        ))}
+        {permissionsError ? <Text style={styles.error}>{permissionsError}</Text> : null}
       </View>
 
       {staffId ? (
@@ -404,6 +486,32 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primaryAlt, borderColor: colors.primaryAlt },
   chipText: { fontSize: 13, color: colors.textDark },
   chipTextActive: { color: colors.white },
+  permissionChip: { backgroundColor: '#EEF2FF', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5 },
+  permissionChipText: { fontSize: 11, color: '#4338CA', fontWeight: '600' },
+  permissionsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  presetRow: { flexDirection: 'row', gap: 14 },
+  presetLink: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+  permissionGroup: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.backgroundLightAlt,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  permissionGroupTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.grayLight,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginTop: 12,
+  },
+  permissionRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  permissionRowBorder: { borderBottomWidth: 1, borderBottomColor: '#F2F2F2' },
+  permissionText: { flex: 1, marginRight: 12 },
+  permissionLabel: { fontSize: 14, fontWeight: '600', color: colors.textDarker },
+  permissionDescription: { fontSize: 12, color: colors.gray, marginTop: 2, lineHeight: 17 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 22 },
   switchText: { flex: 1, marginRight: 12 },
   switchTitle: { fontSize: 15, fontWeight: '600', color: colors.textDarker, marginBottom: 2 },

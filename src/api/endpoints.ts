@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import type { PermissionKey } from '../utils/permissions';
 
 export type UserRole = 'user' | 'provider' | 'staff';
 
@@ -112,6 +113,7 @@ export interface StaffPayload {
   password?: string;
   phone?: string;
   assigned_services: string[];
+  permissions?: PermissionKey[];
 }
 
 export const staffApi = {

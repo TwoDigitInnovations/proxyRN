@@ -55,3 +55,12 @@ export type StaffTabParamList = {
   HistoryStaff: undefined;
   SettingsStaff: undefined;
 };
+
+export type SettingsStaffStackParamList = {
+  SettingsStaff: undefined;
+  ProfileProvider: undefined;
+  MyServiceProvider: undefined;
+  MyStaffProvider: undefined;
+  ManagePlansProvider: undefined;
+  SubscriptionSuccess: { subscriptionId: string };
+};

@@ -9,6 +9,7 @@ import { InfoRow, SectionCard } from '../../components/SectionCard';
 import { StatusPill } from '../../components/StatusPill';
 import { appointmentApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import type { Appointment } from '../../types/models';
@@ -19,6 +20,8 @@ export default function MyAppointmentsDetailsProvider() {
   const route = useRoute<RouteProp<MyAppointmentsProviderStackParamList, 'MyAppointmentsDetailsProvider'>>();
   const { appointmentId } = route.params;
   const { showLoading, hideLoading, showToast } = useUi();
+  const { can } = useAuth();
+  const canManage = can('appointments.manage');
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -136,8 +139,14 @@ export default function MyAppointmentsDetailsProvider() {
         </SectionCard>
       ) : null}
 
-      {isPending ? (
+      {isPending && canManage ? (
         <PrimaryButton title={t('Mark as Completed')} onPress={handleComplete} style={styles.button} />
+      ) : isPending ? (
+        <View style={styles.readOnlyBanner}>
+          <Text style={styles.readOnlyText}>
+            {t('You can view this booking but not change its status.')}
+          </Text>
+        </View>
       ) : (
         <View style={styles.completedBanner}>
           <Text style={styles.completedIcon}>✓</Text>
@@ -205,6 +214,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: colors.successLight,
   },
+  readOnlyBanner: {
+    marginTop: 24,
+    marginHorizontal: 20,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: colors.backgroundLight,
+  },
+  readOnlyText: { fontSize: 13, color: colors.gray, textAlign: 'center' },
   completedIcon: { fontSize: 15, fontWeight: '700', color: colors.success },
   completedText: { flex: 1, fontSize: 13, color: colors.success },
 });

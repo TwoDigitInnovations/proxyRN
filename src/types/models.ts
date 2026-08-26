@@ -1,3 +1,5 @@
+import type { PermissionKey } from '../utils/permissions';
+
 export type Gender = 'Male' | 'Female' | 'Other';
 
 /** The four methods offered at every checkout - ticket booking and plans alike. */
@@ -95,6 +97,7 @@ export interface StaffMember {
   role: 'staff';
   isActive: boolean;
   assigned_services: AssignedService[];
+  permissions: PermissionKey[];
   createdAt?: string;
 }
 
@@ -173,6 +176,7 @@ export interface UserProfile {
   about_us?: string;
   company?: string;
   role: 'user' | 'provider' | 'staff';
+  permissions?: PermissionKey[];
   isAvailable?: boolean;
   document?: string[];
   status?: 'Pending' | 'Verified' | 'Suspended';

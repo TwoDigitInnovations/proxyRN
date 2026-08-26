@@ -13,8 +13,8 @@ import type { Appointment } from '../../types/models';
 
 export default function HistoryProvider() {
   const { t } = useTranslation();
-  const { userDetail } = useAuth();
-  const providerId = userDetail?.id ?? userDetail?._id;
+  // A staff login reads its parent provider's history, not its own id's.
+  const { agencyId: providerId } = useAuth();
 
   const fetchPage = useCallback(
     async (page: number, limit: number) => {

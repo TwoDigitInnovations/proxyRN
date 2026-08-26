@@ -67,8 +67,8 @@ function SummaryHeader({ summary, providerName }: { summary: RatingSummary; prov
 export default function ProviderReviews() {
   const { t } = useTranslation();
   const route = useRoute<RouteProp<RootStackParamList, 'ProviderReviews'>>();
-  const { userDetail } = useAuth();
-  const providerId = route.params?.providerId ?? userDetail?.id ?? userDetail?._id ?? '';
+  const { agencyId } = useAuth();
+  const providerId = route.params?.providerId ?? agencyId ?? '';
   const providerName = route.params?.providerName;
 
   const [summary, setSummary] = useState<RatingSummary>(EMPTY_SUMMARY);

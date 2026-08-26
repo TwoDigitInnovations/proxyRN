@@ -2,18 +2,19 @@ import React, { useCallback, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import moment from 'moment';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { Icon, type IconName } from '../../components/Icon';
-import { staffApi } from '../../api/endpoints';
+import { reviewApi, staffApi, subscriptionApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
-import type { StaffServiceQueue } from '../../types/models';
-import type { RootStackParamList } from '../../navigation/types';
+import type { RatingSummary, StaffServiceQueue, SubscriptionSummary } from '../../types/models';
+import type { RootStackParamList, SettingsStaffStackParamList } from '../../navigation/types';
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<SettingsStaffStackParamList & RootStackParamList>;
 
 interface MenuItemProps {
   iconName: IconName;
@@ -45,13 +46,18 @@ function SettingsMenuItem({ iconName, iconColor, iconBg, label, subtitle, onPres
   );
 }
 
+/**
+ * The staff member's Settings tab, and the one screen that is never taken away.
+ */
 export default function SettingsStaff() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { userDetail, logout } = useAuth();
+  const { userDetail, logout, can } = useAuth();
 
   const [services, setServices] = useState<StaffServiceQueue[]>([]);
   const [agency, setAgency] = useState<string | null>(null);
+  const [rating, setRating] = useState<RatingSummary | null>(null);
+  const [plan, setPlan] = useState<SubscriptionSummary | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -67,10 +73,30 @@ export default function SettingsStaff() {
           // The assigned list is supplementary here: keep settings usable.
         }
       })();
+      if (can('reviews.view')) {
+        (async () => {
+          try {
+            const res: any = await reviewApi.getMyRatingSummary();
+            if (mounted) setRating(res?.data ?? null);
+          } catch {
+            // Supplementary: the row still opens without its subtitle.
+          }
+        })();
+      }
+      if (can('subscription.view')) {
+        (async () => {
+          try {
+            const res: any = await subscriptionApi.getMySubscription();
+            if (mounted) setPlan(res?.data ?? null);
+          } catch {
+            // Supplementary: the row falls back to the plain label.
+          }
+        })();
+      }
       return () => {
         mounted = false;
       };
-    }, []),
+    }, [can]),
   );
 
   function confirmLogout() {
@@ -81,6 +107,17 @@ export default function SettingsStaff() {
   }
 
   const initialLetter = userDetail?.name ? userDetail.name.charAt(0).toUpperCase() : 'S';
+  const isSubscribed = plan?.isSubscribed ?? false;
+  const planLabel = plan?.planLabel || t('Free');
+
+  const agencyRows = [
+    can('profile.manage'),
+    can('services.view'),
+    can('staff.manage'),
+    can('subscription.view'),
+    can('reviews.view'),
+  ];
+  const lastAgencyRow = agencyRows.lastIndexOf(true);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
@@ -105,6 +142,13 @@ export default function SettingsStaff() {
             </Text>
           </View>
         </View>
+        {can('profile.manage') ? (
+          <TouchableOpacity
+            style={styles.editProfileBtn}
+            onPress={() => navigation.navigate('ProfileProvider')}>
+            <Text style={styles.editProfileBtnText}>{t('Edit')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <LanguageSwitcher />
@@ -126,6 +170,95 @@ export default function SettingsStaff() {
           </View>
         )}
       </View>
+
+      {lastAgencyRow >= 0 ? (
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionHeaderTitle}>{t('AGENCY')}</Text>
+
+          {can('profile.manage') ? (
+            <SettingsMenuItem
+              iconName="user"
+              iconColor="#1D4ED8"
+              iconBg="#E8F0FE"
+              label={t('My Profile')}
+              subtitle={t('Update your name, photo and contact details')}
+              onPress={() => navigation.navigate('ProfileProvider')}
+              isLast={lastAgencyRow === 0}
+            />
+          ) : null}
+
+          {can('services.view') ? (
+            <SettingsMenuItem
+              iconName="briefcase"
+              iconColor="#EA580C"
+              iconBg="#FFF3E0"
+              label={t('My Service Listings')}
+              subtitle={
+                can('services.manage')
+                  ? t('Manage the services you were assigned and their time slots')
+                  : t('View the services you were assigned')
+              }
+              onPress={() => navigation.navigate('MyServiceProvider')}
+              isLast={lastAgencyRow === 1}
+            />
+          ) : null}
+
+          {can('staff.manage') ? (
+            <SettingsMenuItem
+              iconName="users"
+              iconColor="#0F766E"
+              iconBg="#CCFBF1"
+              label={t('My Staff')}
+              subtitle={t('Add employees and choose the services they can handle')}
+              onPress={() => navigation.navigate('MyStaffProvider')}
+              isLast={lastAgencyRow === 2}
+            />
+          ) : null}
+
+          {can('subscription.view') ? (
+            <SettingsMenuItem
+              iconName="crown"
+              iconColor="#B45309"
+              iconBg="#FEF3C7"
+              label={can('subscription.manage') ? t('Manage Plans & Subscriptions') : t('Plans & Subscriptions')}
+              subtitle={
+                isSubscribed
+                  ? t('{{plan}} plan · renews {{date}}', {
+                    plan: planLabel,
+                    date: moment(plan?.endDate).format('DD MMM YYYY'),
+                  })
+                  : t('The agency is on the Free plan')
+              }
+              onPress={() => navigation.navigate('ManagePlansProvider')}
+              isLast={lastAgencyRow === 3}
+            />
+          ) : null}
+
+          {can('reviews.view') ? (
+            <SettingsMenuItem
+              iconName="star"
+              iconColor="#B45309"
+              iconBg="#FEF3C7"
+              label={t('Reviews & Ratings')}
+              subtitle={
+                rating && rating.totalReviews > 0
+                  ? t('{{average}} average from {{total}} reviews', {
+                    average: rating.averageRating.toFixed(1),
+                    total: rating.totalReviews,
+                  })
+                  : t('No reviews yet')
+              }
+              onPress={() =>
+                navigation.navigate('ProviderReviews', {
+                  providerId: undefined,
+                  providerName: agency ?? undefined,
+                })
+              }
+              isLast={lastAgencyRow === 4}
+            />
+          ) : null}
+        </View>
+      ) : null}
 
       <View style={styles.sectionCard}>
         <Text style={styles.sectionHeaderTitle}>{t('SUPPORT')}</Text>
@@ -216,6 +349,14 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   roleTagText: { fontSize: 11, color: '#1D4ED8', fontWeight: '600' },
+  editProfileBtn: {
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+  },
+  editProfileBtnText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
   sectionCard: {
     backgroundColor: colors.white,
     marginHorizontal: 16,

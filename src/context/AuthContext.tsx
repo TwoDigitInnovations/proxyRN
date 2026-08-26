@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setUnauthorizedHandler } from '../api/client';
 import { authApi, type UserRole } from '../api/endpoints';
+import { effectivePermissions, type PermissionKey } from '../utils/permissions';
 
 export interface UserDetail {
   _id: string;
@@ -24,9 +25,20 @@ interface AuthContextValue {
   token: string | null;
   userDetail: UserDetail | null;
   isLoading: boolean;
+  permissions: PermissionKey[];
+  can: (permission: PermissionKey) => boolean;
+  agencyId: string | undefined;
   login: (token: string, userDetail: UserDetail) => Promise<void>;
   logout: () => Promise<void>;
   updateUserDetail: (userDetail: UserDetail) => Promise<void>;
+  /** Re-reads the account from the API - picks up a permission the provider changed. */
+  refreshProfile: () => Promise<void>;
+}
+
+function readId(value: any): string | undefined {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value;
+  return value._id ?? value.id ?? undefined;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -80,9 +92,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserDetail(newUserDetail);
   }, []);
 
+  const refreshProfile = useCallback(async () => {
+    try {
+      const res: any = await authApi.getProfile();
+      const profile = res?.data;
+      if (!profile) return;
+      setUserDetail(prev => {
+        const merged = { ...(prev ?? {}), ...profile, id: profile._id ?? prev?.id } as UserDetail;
+        AsyncStorage.setItem('userDetail', JSON.stringify(merged));
+        return merged;
+      });
+    } catch {
+      // Offline or a stale token: keep the cached account and carry on. A 401
+      // is already handled by the client's unauthorized handler above.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) refreshProfile();
+  }, [token, refreshProfile]);
+
+  const permissions = useMemo(() => effectivePermissions(userDetail), [userDetail]);
+
+  const can = useCallback(
+    (permission: PermissionKey) => permissions.includes(permission),
+    [permissions],
+  );
+
+  const agencyId = useMemo(() => {
+    if (!userDetail) return undefined;
+    if (userDetail.role === 'staff') return readId(userDetail.parent_provider);
+    return userDetail.id ?? userDetail._id;
+  }, [userDetail]);
+
   const value = useMemo(
-    () => ({ token, userDetail, isLoading, login, logout, updateUserDetail }),
-    [token, userDetail, isLoading, login, logout, updateUserDetail],
+    () => ({
+      token,
+      userDetail,
+      isLoading,
+      permissions,
+      can,
+      agencyId,
+      login,
+      logout,
+      updateUserDetail,
+      refreshProfile,
+    }),
+    [
+      token,
+      userDetail,
+      isLoading,
+      permissions,
+      can,
+      agencyId,
+      login,
+      logout,
+      updateUserDetail,
+      refreshProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

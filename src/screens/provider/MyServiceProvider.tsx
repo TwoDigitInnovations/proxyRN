@@ -9,6 +9,7 @@ import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
 import { categoryApi, serviceApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { pickMultipleImages } from '../../utils/imagePicker';
 import { colors } from '../../theme/colors';
@@ -28,6 +29,8 @@ interface PlacePrediction {
 export default function MyServiceProvider() {
   const { t } = useTranslation();
   const { showLoading, hideLoading, showToast } = useUi();
+  const { can } = useAuth();
+  const canManage = can('services.manage');
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [servicesList, setServicesList] = useState<ServiceListing[]>([]);
@@ -299,19 +302,29 @@ export default function MyServiceProvider() {
               {t('{{total}} services created', { total: servicesList.length })}
             </Text>
           </View>
-          <TouchableOpacity style={styles.createBtn} onPress={startAddNewService}>
-            <Text style={styles.createBtnText}>{t('+ Add Service')}</Text>
-          </TouchableOpacity>
+          {canManage ? (
+            <TouchableOpacity style={styles.createBtn} onPress={startAddNewService}>
+              <Text style={styles.createBtnText}>{t('+ Add Service')}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
+
+        {!canManage ? (
+          <Text style={styles.readOnlyCaption}>
+            {t('You can view these services but not change them.')}
+          </Text>
+        ) : null}
 
         {servicesList.length === 0 ? (
           <View style={styles.emptyContainer}>
             <EmptyState message={t('No services created yet.')} />
-            <PrimaryButton
-              title={t('+ Create First Service')}
-              onPress={startAddNewService}
-              style={styles.firstServiceBtn}
-            />
+            {canManage ? (
+              <PrimaryButton
+                title={t('+ Create First Service')}
+                onPress={startAddNewService}
+                style={styles.firstServiceBtn}
+              />
+            ) : null}
           </View>
         ) : (
           <View style={styles.cardList}>
@@ -343,14 +356,16 @@ export default function MyServiceProvider() {
                     ⏰ {t('{{total}} Available Slots', { total: item.service_slot?.length ?? 0 })}
                   </Text>
 
-                  <View style={styles.cardActions}>
-                    <TouchableOpacity style={styles.editBtn} onPress={() => startEditService(item)}>
-                      <Text style={styles.editBtnText}>✏️ {t('Edit')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteService(item)}>
-                      <Text style={styles.deleteBtnText}>🗑️ {t('Delete')}</Text>
-                    </TouchableOpacity>
-                  </View>
+                  {canManage ? (
+                    <View style={styles.cardActions}>
+                      <TouchableOpacity style={styles.editBtn} onPress={() => startEditService(item)}>
+                        <Text style={styles.editBtnText}>✏️ {t('Edit')}</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDeleteService(item)}>
+                        <Text style={styles.deleteBtnText}>🗑️ {t('Delete')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             ))}
@@ -495,6 +510,7 @@ const styles = StyleSheet.create({
   topHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textDarker },
   headerSubtitle: { fontSize: 13, color: colors.gray, marginTop: 2 },
+  readOnlyCaption: { fontSize: 12, color: colors.grayLight, marginTop: 12, lineHeight: 18 },
   createBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
   createBtnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   emptyContainer: { marginTop: 40, alignItems: 'center' },

@@ -12,9 +12,10 @@ import HistoryIconSelected from '../assets/tabsIcon/tabs-icon-3selected.svg';
 import SettingsIcon from '../assets/tabsIcon/tabs-icon-4.svg';
 import SettingsIconSelected from '../assets/tabsIcon/tabs-icon-4selected.svg';
 import HomeStaff from '../screens/staff/HomeStaff';
-import SettingsStaff from '../screens/staff/SettingsStaff';
 import HistoryProvider from '../screens/provider/HistoryProvider';
 import { MyAppointmentsProviderStack } from './MyAppointmentsProviderStack';
+import { SettingsStaffStack } from './SettingsStaffStack';
+import { useAuth } from '../context/AuthContext';
 import type { StaffTabParamList } from './types';
 import { getTabBarStyle, tabBarLabelStyle, tabBarActiveTintColor, tabBarInactiveTintColor } from './tabBarStyle';
 
@@ -36,6 +37,8 @@ const iconMap: Record<keyof StaffTabParamList, [React.FC<SvgProps>, React.FC<Svg
 export function StaffTabs() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
+  const { can } = useAuth();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -51,14 +54,20 @@ export function StaffTabs() {
         },
       })}
     >
-      <Tab.Screen name="HomeStaff" component={HomeStaff} options={{ title: t('Home') }} />
-      <Tab.Screen
-        name="MyAppointmentsStaff"
-        component={MyAppointmentsProviderStack}
-        options={{ title: t('Appointments') }}
-      />
-      <Tab.Screen name="HistoryStaff" component={HistoryProvider} options={{ title: t('History') }} />
-      <Tab.Screen name="SettingsStaff" component={SettingsStaff} options={{ title: t('Settings') }} />
+      {can('dashboard.view') ? (
+        <Tab.Screen name="HomeStaff" component={HomeStaff} options={{ title: t('Home') }} />
+      ) : null}
+      {can('appointments.view') ? (
+        <Tab.Screen
+          name="MyAppointmentsStaff"
+          component={MyAppointmentsProviderStack}
+          options={{ title: t('Appointments') }}
+        />
+      ) : null}
+      {can('history.view') ? (
+        <Tab.Screen name="HistoryStaff" component={HistoryProvider} options={{ title: t('History') }} />
+      ) : null}
+      <Tab.Screen name="SettingsStaff" component={SettingsStaffStack} options={{ title: t('Settings') }} />
     </Tab.Navigator>
   );
 }

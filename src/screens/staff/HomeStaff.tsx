@@ -35,8 +35,9 @@ interface ProviderSummary {
 export default function HomeStaff() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<StaffTabParamList>>();
-  const { userDetail } = useAuth();
+  const { userDetail, can } = useAuth();
   const { showToast } = useUi();
+  const canSeeAppointments = can('appointments.view');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -50,7 +51,9 @@ export default function HomeStaff() {
       const [servicesRes, statusRes, appointmentsRes]: [any, any, any] = await Promise.all([
         staffApi.getMyServices(),
         appointmentApi.getVisitorsStatus(),
-        appointmentApi.getAppointmentByProvider({ limit: 5, page: 1 }),
+        canSeeAppointments
+          ? appointmentApi.getAppointmentByProvider({ limit: 5, page: 1 })
+          : Promise.resolve(null),
       ]);
       setServices(servicesRes?.data?.services ?? []);
       setProvider(servicesRes?.data?.provider ?? null);
@@ -62,7 +65,7 @@ export default function HomeStaff() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast, t]);
+  }, [canSeeAppointments, showToast, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -151,30 +154,34 @@ export default function HomeStaff() {
         )}
       </View>
 
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{t('Upcoming Appointments')}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('MyAppointmentsStaff' as never)}>
-          <Text style={styles.seeAll}>{t('See All ›')}</Text>
-        </TouchableOpacity>
-      </View>
+      {canSeeAppointments ? (
+        <>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>{t('Upcoming Appointments')}</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('MyAppointmentsStaff' as never)}>
+              <Text style={styles.seeAll}>{t('See All ›')}</Text>
+            </TouchableOpacity>
+          </View>
 
-      <View style={styles.listWrap}>
-        {appointments.length === 0 ? (
-          <EmptyState message={t('No pending appointments.')} />
-        ) : (
-          appointments.map(item => (
-            <AppointmentListItem
-              key={item._id}
-              title={item.user?.name ?? item.name ?? t('Visitor')}
-              subtitle={item.purpose_of_visit}
-              dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
-              status={item.status}
-              avatarUrl={item.user?.profile}
-              onPress={() => navigation.navigate('MyAppointmentsStaff' as never)}
-            />
-          ))
-        )}
-      </View>
+          <View style={styles.listWrap}>
+            {appointments.length === 0 ? (
+              <EmptyState message={t('No pending appointments.')} />
+            ) : (
+              appointments.map(item => (
+                <AppointmentListItem
+                  key={item._id}
+                  title={item.user?.name ?? item.name ?? t('Visitor')}
+                  subtitle={item.purpose_of_visit}
+                  dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
+                  status={item.status}
+                  avatarUrl={item.user?.profile}
+                  onPress={() => navigation.navigate('MyAppointmentsStaff' as never)}
+                />
+              ))
+            )}
+          </View>
+        </>
+      ) : null}
     </ScrollView>
   );
 }

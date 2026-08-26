@@ -76,7 +76,8 @@ export default function ManagePlansProvider() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { userDetail, updateUserDetail } = useAuth();
+  const { userDetail, updateUserDetail, can } = useAuth();
+  const canManage = can('subscription.manage');
   const { showLoading, hideLoading, showToast } = useUi();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -300,9 +301,11 @@ export default function ManagePlansProvider() {
                   <Text style={styles.currentMetaValue}>{summary?.daysRemaining ?? 0}</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.cancelLink} onPress={confirmCancel} activeOpacity={0.7}>
-                <Text style={styles.cancelLinkText}>{t('Cancel Subscription')}</Text>
-              </TouchableOpacity>
+              {canManage ? (
+                <TouchableOpacity style={styles.cancelLink} onPress={confirmCancel} activeOpacity={0.7}>
+                  <Text style={styles.cancelLinkText}>{t('Cancel Subscription')}</Text>
+                </TouchableOpacity>
+              ) : null}
             </>
           ) : (
             <Text style={styles.currentFreeHint}>
@@ -392,7 +395,7 @@ export default function ManagePlansProvider() {
                       ? t('Switch to {{plan}}', { plan: plan.name })
                       : t('Choose {{plan}}', { plan: plan.name })
                 }
-                disabled={isCurrentCycle}
+                disabled={isCurrentCycle || !canManage}
                 style={styles.choosePlanButton}
                 onPress={() => openCheckout(plan)}
               />

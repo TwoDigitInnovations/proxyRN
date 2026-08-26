@@ -48,6 +48,7 @@ interface ProfileSnapshot {
 export default function ProfileProvider() {
   const { t } = useTranslation();
   const { userDetail, updateUserDetail } = useAuth();
+  const isStaff = userDetail?.role === 'staff';
   const { showLoading, hideLoading, showToast } = useUi();
 
   const [isEdit, setIsEdit] = useState(false);
@@ -153,14 +154,17 @@ export default function ProfileProvider() {
 
   async function handleSave() {
     setSubmitted(true);
-    if (validateName(name) || validateEmail(email) || phoneValidation) return;
+    if (validateName(name)) return;
+    if (!isStaff && (validateEmail(email) || phoneValidation)) return;
 
     showLoading();
     try {
       const formData = new FormData();
       formData.append('name', name.trim());
-      formData.append('email', email.trim().toLowerCase());
-      formData.append('phone', phone);
+      if (!isStaff) {
+        formData.append('email', email.trim().toLowerCase());
+        formData.append('phone', phone);
+      }
       formData.append('company', company.trim());
       formData.append('about_us', aboutUs.trim());
       formData.append('oldImages', JSON.stringify(existingDocuments));
@@ -238,15 +242,19 @@ export default function ProfileProvider() {
 
           <View style={styles.heroBadgeRow}>
             <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>{t('Service Provider')}</Text>
-            </View>
-            <View style={[styles.planBadge, plan?.isSubscribed ? styles.planBadgePaid : styles.planBadgeFree]}>
-              <Icon name="crown" size={12} color={plan?.isSubscribed ? '#B45309' : colors.grayAlt} />
-              <Text
-                style={[styles.planBadgeText, plan?.isSubscribed && styles.planBadgeTextPaid]}>
-                {plan?.isSubscribed ? plan.planLabel : t('Free')}
+              <Text style={styles.heroBadgeText}>
+                {isStaff ? t('Staff Account') : t('Service Provider')}
               </Text>
             </View>
+            {isStaff ? null : (
+              <View style={[styles.planBadge, plan?.isSubscribed ? styles.planBadgePaid : styles.planBadgeFree]}>
+                <Icon name="crown" size={12} color={plan?.isSubscribed ? '#B45309' : colors.grayAlt} />
+                <Text
+                  style={[styles.planBadgeText, plan?.isSubscribed && styles.planBadgeTextPaid]}>
+                  {plan?.isSubscribed ? plan.planLabel : t('Free')}
+                </Text>
+              </View>
+            )}
           </View>
 
           {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
@@ -266,30 +274,42 @@ export default function ProfileProvider() {
                 error={nameError}
                 style={styles.input}
               />
-              <TextField
-                label={t('Email')}
-                value={email}
-                onChangeText={value => setEmail(sanitizeEmail(value))}
-                editable
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={254}
-                placeholder="you@example.com"
-                error={emailError}
-                style={styles.input}
-              />
-              <TextField
-                label={t('Phone')}
-                value={phone}
-                onChangeText={value => setPhone(sanitizePhone(value))}
-                editable
-                keyboardType="phone-pad"
-                maxLength={16}
-                placeholder={t('Enter your phone number')}
-                error={phoneError}
-                style={styles.input}
-              />
+              {isStaff ? (
+                <View style={styles.lockedStack}>
+                  <InfoRow label={t('Email')} value={email} />
+                  <InfoRow label={t('Phone')} value={phone} last />
+                  <Text style={styles.lockedHint}>
+                    {t('Your email and phone are set by your provider. Ask them to change either one.')}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <TextField
+                    label={t('Email')}
+                    value={email}
+                    onChangeText={value => setEmail(sanitizeEmail(value))}
+                    editable
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    maxLength={254}
+                    placeholder="you@example.com"
+                    error={emailError}
+                    style={styles.input}
+                  />
+                  <TextField
+                    label={t('Phone')}
+                    value={phone}
+                    onChangeText={value => setPhone(sanitizePhone(value))}
+                    editable
+                    keyboardType="phone-pad"
+                    maxLength={16}
+                    placeholder={t('Enter your phone number')}
+                    error={phoneError}
+                    style={styles.input}
+                  />
+                </>
+              )}
               <TextField
                 label={t('Company')}
                 value={company}
@@ -476,6 +496,8 @@ const styles = StyleSheet.create({
   infoValueEmpty: { color: colors.grayLight },
 
   fieldStack: { marginTop: -4 },
+  lockedStack: { marginTop: 12 },
+  lockedHint: { fontSize: 12, color: colors.grayLight, marginTop: 10, lineHeight: 17 },
   input: { backgroundColor: colors.white, borderColor: colors.grayLight, color: colors.textDark },
   textArea: { height: 120, textAlignVertical: 'top', paddingTop: 12 },
   aboutText: { fontSize: 14, lineHeight: 21, color: colors.textDark, marginTop: 12 },
