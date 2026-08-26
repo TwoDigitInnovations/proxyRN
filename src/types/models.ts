@@ -117,12 +117,43 @@ export type BillingCycle = 'monthly' | 'yearly';
 
 export type PlanKey = 'starter' | 'business' | 'network';
 
+export type SupportLevel = 'email' | 'priority' | 'dedicated';
+
+/** Numeric allowances. -1 means unlimited; 0 means not included at all. */
+export interface PlanLimits {
+  serviceListings: number;
+  queueTicketsPerDay: number;
+  staffAccounts: number;
+  counters: number;
+  branches: number;
+  historyRetentionDays: number;
+}
+
+/** The on/off features the admin ticks on a plan. */
+export interface PlanCapabilities {
+  liveQueueBoard: boolean;
+  appointmentSlots: boolean;
+  priorityCounter: boolean;
+  kioskCheckIn: boolean;
+  smsNotifications: boolean;
+  analyticsDashboard: boolean;
+  multiBranchReporting: boolean;
+  dataExport: boolean;
+  customBranding: boolean;
+  apiAccess: boolean;
+}
+
 /** A subscription tier as the admin configured it. */
 export interface Plan {
   _id: string;
   key: PlanKey;
   name: string;
   tagline?: string;
+  limits?: PlanLimits;
+  capabilities?: PlanCapabilities;
+  supportLevel?: SupportLevel;
+  customFeatures?: string[];
+  /** Card bullets the server derives from the fields above. Read-only. */
   features: string[];
   monthlyPrice: number;
   yearlyPrice: number;
@@ -140,6 +171,10 @@ export interface Subscription {
   plan?: Plan | string;
   planKey?: PlanKey;
   planName: string;
+  /** Entitlements as they stood on the day this was bought. */
+  limits?: PlanLimits;
+  capabilities?: PlanCapabilities;
+  supportLevel?: SupportLevel;
   features: string[];
   billingCycle: BillingCycle;
   amount: number;
