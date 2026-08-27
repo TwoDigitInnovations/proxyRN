@@ -64,7 +64,9 @@ export default function MyServiceProvider() {
   const listingLimit = entitlements.limitOf('serviceListings');
   const listingsLeft = entitlements.remaining('serviceListings', servicesList.length);
   const hasListingRoom = entitlements.hasRoom('serviceListings', servicesList.length);
-  const openPlans = () => navigation.navigate('ManagePlansProvider');
+  // Staff only reach the plans screen when their permissions registered it.
+  const canOpenPlans = can('subscription.view');
+  const openPlans = canOpenPlans ? () => navigation.navigate('ManagePlansProvider') : undefined;
 
   function resetForm(catList = categories) {
     setServiceId(null);
@@ -83,7 +85,7 @@ export default function MyServiceProvider() {
 
   function startAddNewService() {
     if (!canManage) {
-      showToast(t('Renew your plan to add a service.'));
+      showToast(t(entitlements.lockKey('Renew your plan to add a service.')));
       return;
     }
     if (!hasListingRoom) {
@@ -100,7 +102,7 @@ export default function MyServiceProvider() {
 
   function startEditService(service: ServiceListing) {
     if (!canManage) {
-      showToast(t('Renew your plan to edit a service.'));
+      showToast(t(entitlements.lockKey('Renew your plan to edit a service.')));
       return;
     }
     setServiceId(service._id);
@@ -139,7 +141,7 @@ export default function MyServiceProvider() {
 
   function handleDeleteService(item: ServiceListing) {
     if (!canManage) {
-      showToast(t('Renew your plan to delete a service.'));
+      showToast(t(entitlements.lockKey('Renew your plan to delete a service.')));
       return;
     }
     Alert.alert(
@@ -282,7 +284,7 @@ export default function MyServiceProvider() {
     setSubmitted(true);
     // The plan can lapse while the form is open, so re-check on submit too.
     if (!canManage) {
-      showToast(t('Renew your plan to save this service.'));
+      showToast(t(entitlements.lockKey('Renew your plan to save this service.')));
       return;
     }
     if (!serviceId && !hasListingRoom) {

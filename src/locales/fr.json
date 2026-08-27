@@ -540,5 +540,13 @@
   "Renew your plan to update this booking.": "Renouvelez votre forfait pour mettre à jour cette réservation.",
   "Your plan is not active, so this booking cannot be updated.": "Votre forfait n'est pas actif, cette réservation ne peut donc pas être mise à jour.",
   "Renew your plan to change your availability.": "Renouvelez votre forfait pour modifier votre disponibilité.",
-  "Your plan keeps {{days}} days of history.": "Votre forfait conserve {{days}} jours d'historique."
+  "Your plan keeps {{days}} days of history.": "Votre forfait conserve {{days}} jours d'historique.",
+  "Your agency plan is not active. Ask your provider to renew it.": "Le forfait de votre agence n'est pas actif. Demandez à votre prestataire de le renouveler.",
+  "Your agency plan ends soon": "Le forfait de votre agence se termine bientôt",
+  "{{plan}} runs out in {{days}} days, on {{date}}. Ask your provider to renew it.": "{{plan}} expire dans {{days}} jours, le {{date}}. Demandez à votre prestataire de le renouveler.",
+  "Your agency plan has expired": "Le forfait de votre agence a expiré",
+  "It ended on {{date}}. You can still see the agency, but adding and editing is off until your provider renews it.": "Il a pris fin le {{date}}. Vous pouvez toujours consulter l'agence, mais l'ajout et la modification sont désactivés jusqu'à ce que votre prestataire le renouvelle.",
+  "Your agency is on the Free plan": "Votre agence est sur le forfait Gratuit",
+  "Your provider has not chosen a plan yet. Until they do, the agency is read-only.": "Votre prestataire n'a pas encore choisi de forfait. En attendant, l'agence est en lecture seule.",
+  "Expired on {{date}} · ask your provider to renew": "Expiré le {{date}} · demandez à votre prestataire de renouveler"
 }

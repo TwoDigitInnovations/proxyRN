@@ -46,7 +46,7 @@ export default function MyAppointmentsDetailsProvider() {
 
   async function handleComplete() {
     if (!canManage) {
-      showToast(t('Renew your plan to update this booking.'));
+      showToast(t(entitlements.lockKey('Renew your plan to update this booking.')));
       return;
     }
     showLoading();
@@ -150,7 +150,7 @@ export default function MyAppointmentsDetailsProvider() {
           <Text style={styles.readOnlyText}>
             {entitlements.canWrite
               ? t('You can view this booking but not change its status.')
-              : t('Your plan is not active, so this booking cannot be updated.')}
+              : t(entitlements.lockKey('Your plan is not active, so this booking cannot be updated.'))}
           </Text>
         </View>
       ) : (

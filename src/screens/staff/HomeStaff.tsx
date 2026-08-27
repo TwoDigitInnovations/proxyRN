@@ -8,6 +8,7 @@ import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
 import { EmptyState } from '../../components/EmptyState';
+import { PlanStatusNotice } from '../../components/PlanNotice';
 import { appointmentApi, staffApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -34,7 +35,7 @@ interface ProviderSummary {
 export default function HomeStaff() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<StaffTabParamList>>();
-  const { userDetail, can } = useAuth();
+  const { userDetail, can, entitlements } = useAuth();
   const { showToast } = useUi();
   const canSeeAppointments = can('appointments.view');
 
@@ -89,6 +90,16 @@ export default function HomeStaff() {
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}>
       <PageHeader title={t('Hi, {{name}}', { name: userDetail?.name ?? t('Staff') })} />
+
+      <PlanStatusNotice
+        entitlements={entitlements}
+        onViewPlans={
+          can('subscription.view')
+            ? () => navigation.navigate('SettingsStaff', { screen: 'ManagePlansProvider' })
+            : undefined
+        }
+        style={styles.planNotice}
+      />
 
       <View style={styles.agencyRow}>
         <Text style={styles.agencyLabel}>{t('Staff account')}</Text>
@@ -189,6 +200,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#F8F9FA' },
   loading: { flex: 1 },
   scroll: { paddingBottom: 40 },
+  planNotice: { marginHorizontal: 16, marginBottom: 16 },
   agencyRow: {
     backgroundColor: colors.white,
     marginHorizontal: 16,

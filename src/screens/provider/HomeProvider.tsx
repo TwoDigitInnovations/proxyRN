@@ -64,7 +64,7 @@ export default function HomeProvider() {
   async function toggleAvailability(value: boolean) {
     // Listing yourself as open for business is itself a paid action.
     if (!entitlements.canWrite) {
-      showToast(t('Renew your plan to change your availability.'));
+      showToast(t(entitlements.lockKey('Renew your plan to change your availability.')));
       return;
     }
     setIsAvailable(value);

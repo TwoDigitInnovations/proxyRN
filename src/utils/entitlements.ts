@@ -128,7 +128,8 @@ const OPEN_CAPABILITIES: PlanCapabilities = CAPABILITY_KEYS.reduce(
  * `expiring` - still active but inside the renewal window.
  * `expired`  - a plan that ran out; read-only until it is renewed.
  * `free`     - never subscribed; read-only until a plan is bought.
- * `open`     - not a provider account, so no plan governs it (see below).
+ * `open`     - no plan governs it: a visitor, or a staff account whose agency
+ *              plan has not been read back yet. Never locks anything.
  */
 export type PlanState = 'active' | 'expiring' | 'expired' | 'free' | 'open';
 
@@ -138,6 +139,8 @@ export interface Entitlements {
   isActive: boolean;
   /** Create, edit and delete. False on `free` and `expired`. */
   canWrite: boolean;
+  /** True for the provider who owns the plan, false for their staff. */
+  managedByMe: boolean;
   planLabel: string;
   endDate: string | null;
   daysRemaining: number;
@@ -150,7 +153,11 @@ export interface Entitlements {
   hasRoom: (key: LimitKey, used: number) => boolean;
   /** How many are left, or `null` when the plan sets no ceiling. */
   remaining: (key: LimitKey, used: number) => number | null;
+  lockKey: (providerKey: string) => string;
 }
+
+/** What a staff member is told when the agency's plan is not live. */
+export const AGENCY_LOCKED_KEY = 'Your agency plan is not active. Ask your provider to renew it.';
 
 function readNumber(value: unknown, fallback: number): number {
   const parsed = Number(value);
@@ -182,6 +189,7 @@ function wholeDaysUntil(endDate: string | null): number {
 
 function build(
   state: PlanState,
+  managedByMe: boolean,
   planLabel: string,
   endDate: string | null,
   daysRemaining: number,
@@ -197,6 +205,7 @@ function build(
     state,
     isActive,
     canWrite: isActive,
+    managedByMe,
     planLabel,
     endDate,
     daysRemaining,
@@ -208,6 +217,7 @@ function build(
     hasRoom: (key: LimitKey, used: number) => isUnlimited(key) || used < limits[key],
     remaining: (key: LimitKey, used: number) =>
       isUnlimited(key) ? null : Math.max(0, limits[key] - used),
+    lockKey: (providerKey: string) => (managedByMe ? providerKey : AGENCY_LOCKED_KEY),
   };
 }
 
@@ -230,25 +240,39 @@ interface AccountLike {
  * Reads the plan off the account `authApi.getProfile` returned.
  */
 export function resolveEntitlements(account?: AccountLike | null): Entitlements {
-  if (!account || account.role !== 'provider') {
-    return build('open', account?.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
+  const role = account?.role;
+  const inAgency = role === 'provider' || role === 'staff';
+
+  if (!account || !inAgency) {
+    return build('open', false, account?.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
   }
 
+  const managedByMe = role === 'provider';
   const summary = account.subscription ?? null;
-  const endDate = summary?.endDate ?? account.plan_expires_at ?? null;
+  if (!managedByMe && account.subscription === undefined) {
+    return build('open', false, account.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
+  }
+
+  const endDate = summary?.endDate ?? (managedByMe ? account.plan_expires_at ?? null : null);
   const daysRemaining = wholeDaysUntil(endDate);
-  const live = !!(summary?.isSubscribed ?? account.plan_name) && daysRemaining > 0;
+  const live =
+    !!(summary?.isSubscribed ?? (managedByMe ? account.plan_name : null)) && daysRemaining > 0;
 
   if (!live) {
     const state: PlanState = endDate ? 'expired' : 'free';
-    return build(state, 'Free', endDate, 0, FREE_LIMITS, FREE_CAPABILITIES);
+    return build(state, managedByMe, 'Free', endDate, 0, FREE_LIMITS, FREE_CAPABILITIES);
   }
 
-  const planLabel = summary?.planLabel || summary?.subscription?.planName || account.plan_name || 'Free';
+  const planLabel =
+    summary?.planLabel ||
+    summary?.subscription?.planName ||
+    (managedByMe ? account.plan_name : null) ||
+    'Free';
   const state: PlanState = daysRemaining <= EXPIRING_SOON_DAYS ? 'expiring' : 'active';
 
   return build(
     state,
+    managedByMe,
     planLabel,
     endDate,
     daysRemaining,

@@ -8,10 +8,11 @@ import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { Icon, type IconName } from '../../components/Icon';
-import { reviewApi, staffApi, subscriptionApi } from '../../api/endpoints';
+import { PlanStatusNotice } from '../../components/PlanNotice';
+import { reviewApi, staffApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
-import type { RatingSummary, StaffServiceQueue, SubscriptionSummary } from '../../types/models';
+import type { RatingSummary, StaffServiceQueue } from '../../types/models';
 import type { RootStackParamList, SettingsStaffStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<SettingsStaffStackParamList & RootStackParamList>;
@@ -52,12 +53,11 @@ function SettingsMenuItem({ iconName, iconColor, iconBg, label, subtitle, onPres
 export default function SettingsStaff() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { userDetail, logout, can } = useAuth();
+  const { userDetail, logout, can, entitlements, refreshProfile } = useAuth();
 
   const [services, setServices] = useState<StaffServiceQueue[]>([]);
   const [agency, setAgency] = useState<string | null>(null);
   const [rating, setRating] = useState<RatingSummary | null>(null);
-  const [plan, setPlan] = useState<SubscriptionSummary | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -83,20 +83,11 @@ export default function SettingsStaff() {
           }
         })();
       }
-      if (can('subscription.view')) {
-        (async () => {
-          try {
-            const res: any = await subscriptionApi.getMySubscription();
-            if (mounted) setPlan(res?.data ?? null);
-          } catch {
-            // Supplementary: the row falls back to the plain label.
-          }
-        })();
-      }
+      refreshProfile();
       return () => {
         mounted = false;
       };
-    }, [can]),
+    }, [can, refreshProfile]),
   );
 
   function confirmLogout() {
@@ -107,8 +98,8 @@ export default function SettingsStaff() {
   }
 
   const initialLetter = userDetail?.name ? userDetail.name.charAt(0).toUpperCase() : 'S';
-  const isSubscribed = plan?.isSubscribed ?? false;
-  const planLabel = plan?.planLabel || t('Free');
+  const isSubscribed = entitlements.isActive && entitlements.state !== 'open';
+  const planLabel = entitlements.planLabel;
 
   const agencyRows = [
     can('profile.manage'),
@@ -150,6 +141,14 @@ export default function SettingsStaff() {
           </TouchableOpacity>
         ) : null}
       </View>
+
+      <PlanStatusNotice
+        entitlements={entitlements}
+        onViewPlans={
+          can('subscription.view') ? () => navigation.navigate('ManagePlansProvider') : undefined
+        }
+        style={styles.planNotice}
+      />
 
       <LanguageSwitcher />
 
@@ -225,9 +224,13 @@ export default function SettingsStaff() {
                 isSubscribed
                   ? t('{{plan}} plan · renews {{date}}', {
                     plan: planLabel,
-                    date: moment(plan?.endDate).format('DD MMM YYYY'),
+                    date: moment(entitlements.endDate).format('DD MMM YYYY'),
                   })
-                  : t('The agency is on the Free plan')
+                  : entitlements.state === 'expired'
+                    ? t('Expired on {{date}} · ask your provider to renew', {
+                      date: moment(entitlements.endDate).format('DD MMM YYYY'),
+                    })
+                    : t('The agency is on the Free plan')
               }
               onPress={() => navigation.navigate('ManagePlansProvider')}
               isLast={lastAgencyRow === 3}
@@ -309,6 +312,10 @@ export default function SettingsStaff() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' },
   scroll: { paddingBottom: 40 },
+  planNotice: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+  },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -55,7 +55,7 @@ export type StaffTabParamList = {
   HomeStaff: undefined;
   MyAppointmentsStaff: undefined;
   HistoryStaff: undefined;
-  SettingsStaff: undefined;
+  SettingsStaff: NavigatorScreenParams<SettingsStaffStackParamList> | undefined;
 };
 
 export type SettingsStaffStackParamList = {

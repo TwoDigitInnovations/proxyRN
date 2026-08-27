@@ -57,22 +57,32 @@ export function PlanStatusNotice({
   style?: StyleProp<ViewStyle>;
 }) {
   const { t } = useTranslation();
-  const { state, planLabel, endDate, daysRemaining } = entitlements;
+  const { state, managedByMe, planLabel, endDate, daysRemaining } = entitlements;
 
   if (state === 'active' || state === 'open') return null;
+
+  const date = moment(endDate).format('DD MMM YYYY');
 
   if (state === 'expiring') {
     return (
       <PlanNotice
         tone="warning"
-        title={t('Your plan ends soon')}
-        message={t('{{plan}} runs out in {{days}} days, on {{date}}. Renew to keep managing your agency.', {
-          plan: planLabel,
-          days: daysRemaining,
-          date: moment(endDate).format('DD MMM YYYY'),
-        })}
+        title={managedByMe ? t('Your plan ends soon') : t('Your agency plan ends soon')}
+        message={
+          managedByMe
+            ? t('{{plan}} runs out in {{days}} days, on {{date}}. Renew to keep managing your agency.', {
+                plan: planLabel,
+                days: daysRemaining,
+                date,
+              })
+            : t('{{plan}} runs out in {{days}} days, on {{date}}. Ask your provider to renew it.', {
+                plan: planLabel,
+                days: daysRemaining,
+                date,
+              })
+        }
         onViewPlans={onViewPlans}
-        actionLabel={t('Renew now')}
+        actionLabel={managedByMe ? t('Renew now') : t('View plans')}
         style={style}
       />
     );
@@ -82,12 +92,14 @@ export function PlanStatusNotice({
     return (
       <PlanNotice
         tone="locked"
-        title={t('Your plan has expired')}
-        message={t('It ended on {{date}}. You can still see your agency, but adding and editing is off until you renew.', {
-          date: moment(endDate).format('DD MMM YYYY'),
-        })}
+        title={managedByMe ? t('Your plan has expired') : t('Your agency plan has expired')}
+        message={
+          managedByMe
+            ? t('It ended on {{date}}. You can still see your agency, but adding and editing is off until you renew.', { date })
+            : t('It ended on {{date}}. You can still see the agency, but adding and editing is off until your provider renews it.', { date })
+        }
         onViewPlans={onViewPlans}
-        actionLabel={t('Renew now')}
+        actionLabel={managedByMe ? t('Renew now') : t('View plans')}
         style={style}
       />
     );
@@ -96,10 +108,14 @@ export function PlanStatusNotice({
   return (
     <PlanNotice
       tone="locked"
-      title={t('You are on the Free plan')}
-      message={t('Choose a plan to add services, hire staff and run your queue. Until then your agency is read-only.')}
+      title={managedByMe ? t('You are on the Free plan') : t('Your agency is on the Free plan')}
+      message={
+        managedByMe
+          ? t('Choose a plan to add services, hire staff and run your queue. Until then your agency is read-only.')
+          : t('Your provider has not chosen a plan yet. Until they do, the agency is read-only.')
+      }
       onViewPlans={onViewPlans}
-      actionLabel={t('Choose a plan')}
+      actionLabel={managedByMe ? t('Choose a plan') : t('View plans')}
       style={style}
     />
   );

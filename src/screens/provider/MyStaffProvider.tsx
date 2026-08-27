@@ -42,7 +42,7 @@ import type { SettingsProviderStackParamList } from '../../navigation/types';
 export default function MyStaffProvider() {
   const { t } = useTranslation();
   const { showLoading, hideLoading, showToast } = useUi();
-  const { entitlements } = useAuth();
+  const { can, entitlements } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<SettingsProviderStackParamList>>();
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
@@ -63,8 +63,10 @@ export default function MyStaffProvider() {
   const seatLimit = entitlements.limitOf('staffAccounts');
   const seatsLeft = entitlements.remaining('staffAccounts', staffList.length);
   const hasSeat = entitlements.hasRoom('staffAccounts', staffList.length);
-  const canManage = entitlements.canWrite;
-  const openPlans = () => navigation.navigate('ManagePlansProvider');
+  const canManage = can('staff.manage') && entitlements.canWrite;
+  // Staff only reach the plans screen when their permissions registered it.
+  const canOpenPlans = can('subscription.view');
+  const openPlans = canOpenPlans ? () => navigation.navigate('ManagePlansProvider') : undefined;
 
   async function loadStaff() {
     try {
@@ -99,7 +101,7 @@ export default function MyStaffProvider() {
 
   function startAddStaff() {
     if (!canManage) {
-      showToast(t('Renew your plan to add a staff member.'));
+      showToast(t(entitlements.lockKey('Renew your plan to add a staff member.')));
       return;
     }
     if (!hasSeat) {
@@ -120,7 +122,7 @@ export default function MyStaffProvider() {
 
   function startEditStaff(member: StaffMember) {
     if (!canManage) {
-      showToast(t('Renew your plan to edit a staff member.'));
+      showToast(t(entitlements.lockKey('Renew your plan to edit a staff member.')));
       return;
     }
     setStaffId(member._id);
@@ -146,7 +148,7 @@ export default function MyStaffProvider() {
 
   function handleRemoveStaff(member: StaffMember) {
     if (!canManage) {
-      showToast(t('Renew your plan to remove a staff member.'));
+      showToast(t(entitlements.lockKey('Renew your plan to remove a staff member.')));
       return;
     }
     Alert.alert(
@@ -193,7 +195,7 @@ export default function MyStaffProvider() {
   async function handleSave() {
     setSubmitted(true);
     if (!canManage) {
-      showToast(t('Renew your plan to save this staff member.'));
+      showToast(t(entitlements.lockKey('Renew your plan to save this staff member.')));
       return;
     }
     if (!staffId && !hasSeat) {
