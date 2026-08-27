@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { setUnauthorizedHandler } from '../api/client';
 import { authApi, type UserRole } from '../api/endpoints';
 import { effectivePermissions, type PermissionKey } from '../utils/permissions';
+import { resolveEntitlements, type Entitlements } from '../utils/entitlements';
 
 export interface UserDetail {
   _id: string;
@@ -27,6 +28,8 @@ interface AuthContextValue {
   isLoading: boolean;
   permissions: PermissionKey[];
   can: (permission: PermissionKey) => boolean;
+  /** What the provider's plan covers. Staff come back `open` - see resolveEntitlements. */
+  entitlements: Entitlements;
   agencyId: string | undefined;
   login: (token: string, userDetail: UserDetail) => Promise<void>;
   logout: () => Promise<void>;
@@ -119,6 +122,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [permissions],
   );
 
+  const entitlements = useMemo(() => resolveEntitlements(userDetail), [userDetail]);
+
   const agencyId = useMemo(() => {
     if (!userDetail) return undefined;
     if (userDetail.role === 'staff') return readId(userDetail.parent_provider);
@@ -132,6 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       permissions,
       can,
+      entitlements,
       agencyId,
       login,
       logout,
@@ -144,6 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isLoading,
       permissions,
       can,
+      entitlements,
       agencyId,
       login,
       logout,

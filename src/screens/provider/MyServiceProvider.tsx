@@ -1,12 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
 import moment from 'moment';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
+import { PlanNotice, PlanStatusNotice } from '../../components/PlanNotice';
 import { categoryApi, serviceApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -16,6 +19,7 @@ import { colors } from '../../theme/colors';
 import { GOOGLE_MAPS_API_KEY } from '../../config/maps';
 import { ADDRESS_MAX, sanitizeText, validateRequiredText } from '../../utils/validation';
 import type { Category, ServiceListing } from '../../types/models';
+import type { SettingsProviderStackParamList } from '../../navigation/types';
 
 const MAX_PHOTOS = 5;
 const SERVICE_NAME_MAX = 80;
@@ -29,8 +33,9 @@ interface PlacePrediction {
 export default function MyServiceProvider() {
   const { t } = useTranslation();
   const { showLoading, hideLoading, showToast } = useUi();
-  const { can } = useAuth();
-  const canManage = can('services.manage');
+  const { can, entitlements } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsProviderStackParamList>>();
+  const canManage = can('services.manage') && entitlements.canWrite;
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [servicesList, setServicesList] = useState<ServiceListing[]>([]);
@@ -55,6 +60,12 @@ export default function MyServiceProvider() {
 
   const [submitted, setSubmitted] = useState(false);
 
+  // How many listings the plan covers, and whether there is room for one more.
+  const listingLimit = entitlements.limitOf('serviceListings');
+  const listingsLeft = entitlements.remaining('serviceListings', servicesList.length);
+  const hasListingRoom = entitlements.hasRoom('serviceListings', servicesList.length);
+  const openPlans = () => navigation.navigate('ManagePlansProvider');
+
   function resetForm(catList = categories) {
     setServiceId(null);
     setServiceName('');
@@ -71,11 +82,27 @@ export default function MyServiceProvider() {
   }
 
   function startAddNewService() {
+    if (!canManage) {
+      showToast(t('Renew your plan to add a service.'));
+      return;
+    }
+    if (!hasListingRoom) {
+      showToast(
+        t('Your plan covers {{limit}} service listings and all of them are in use.', {
+          limit: listingLimit,
+        }),
+      );
+      return;
+    }
     resetForm();
     setViewMode('form');
   }
 
   function startEditService(service: ServiceListing) {
+    if (!canManage) {
+      showToast(t('Renew your plan to edit a service.'));
+      return;
+    }
     setServiceId(service._id);
     setServiceName(service.service_name ?? '');
     setAddress(service.address ?? '');
@@ -111,6 +138,10 @@ export default function MyServiceProvider() {
   }, []);
 
   function handleDeleteService(item: ServiceListing) {
+    if (!canManage) {
+      showToast(t('Renew your plan to delete a service.'));
+      return;
+    }
     Alert.alert(
       t('Delete Service'),
       t('Are you sure you want to delete "{{name}}"?', { name: item.service_name }),
@@ -249,6 +280,19 @@ export default function MyServiceProvider() {
 
   async function handleSave() {
     setSubmitted(true);
+    // The plan can lapse while the form is open, so re-check on submit too.
+    if (!canManage) {
+      showToast(t('Renew your plan to save this service.'));
+      return;
+    }
+    if (!serviceId && !hasListingRoom) {
+      showToast(
+        t('Your plan covers {{limit}} service listings and all of them are in use.', {
+          limit: listingLimit,
+        }),
+      );
+      return;
+    }
     if (serviceNameValidation || addressValidation || !categoryId || !location || slots.length === 0) {
       return;
     }
@@ -299,17 +343,37 @@ export default function MyServiceProvider() {
           <View>
             <Text style={styles.headerTitle}>{t('My Services')}</Text>
             <Text style={styles.headerSubtitle}>
-              {t('{{total}} services created', { total: servicesList.length })}
+              {listingsLeft === null
+                ? t('{{total}} services created', { total: servicesList.length })
+                : t('{{total}} of {{limit}} services used', {
+                    total: servicesList.length,
+                    limit: listingLimit,
+                  })}
             </Text>
           </View>
-          {canManage ? (
+          {canManage && hasListingRoom ? (
             <TouchableOpacity style={styles.createBtn} onPress={startAddNewService}>
               <Text style={styles.createBtnText}>{t('+ Add Service')}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
-        {!canManage ? (
+        <PlanStatusNotice entitlements={entitlements} onViewPlans={openPlans} style={styles.planNotice} />
+
+        {entitlements.canWrite && !hasListingRoom ? (
+          <PlanNotice
+            tone="info"
+            title={t('Service limit reached')}
+            message={t('Your plan covers {{limit}} service listings and all of them are in use.', {
+              limit: listingLimit,
+            })}
+            onViewPlans={openPlans}
+            actionLabel={t('Upgrade plan')}
+            style={styles.planNotice}
+          />
+        ) : null}
+
+        {!canManage && entitlements.canWrite ? (
           <Text style={styles.readOnlyCaption}>
             {t('You can view these services but not change them.')}
           </Text>
@@ -318,7 +382,7 @@ export default function MyServiceProvider() {
         {servicesList.length === 0 ? (
           <View style={styles.emptyContainer}>
             <EmptyState message={t('No services created yet.')} />
-            {canManage ? (
+            {canManage && hasListingRoom ? (
               <PrimaryButton
                 title={t('+ Create First Service')}
                 onPress={startAddNewService}
@@ -511,6 +575,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textDarker },
   headerSubtitle: { fontSize: 13, color: colors.gray, marginTop: 2 },
   readOnlyCaption: { fontSize: 12, color: colors.grayLight, marginTop: 12, lineHeight: 18 },
+  planNotice: { marginBottom: 16 },
   createBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
   createBtnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   emptyContainer: { marginTop: 40, alignItems: 'center' },

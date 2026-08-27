@@ -20,8 +20,8 @@ export default function MyAppointmentsDetailsProvider() {
   const route = useRoute<RouteProp<MyAppointmentsProviderStackParamList, 'MyAppointmentsDetailsProvider'>>();
   const { appointmentId } = route.params;
   const { showLoading, hideLoading, showToast } = useUi();
-  const { can } = useAuth();
-  const canManage = can('appointments.manage');
+  const { can, entitlements } = useAuth();
+  const canManage = can('appointments.manage') && entitlements.canWrite;
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,6 +45,10 @@ export default function MyAppointmentsDetailsProvider() {
   }, [load]);
 
   async function handleComplete() {
+    if (!canManage) {
+      showToast(t('Renew your plan to update this booking.'));
+      return;
+    }
     showLoading();
     try {
       await appointmentApi.updateAppointmentStatusByProvider({ status: 'Completed', id: appointmentId });
@@ -144,7 +148,9 @@ export default function MyAppointmentsDetailsProvider() {
       ) : isPending ? (
         <View style={styles.readOnlyBanner}>
           <Text style={styles.readOnlyText}>
-            {t('You can view this booking but not change its status.')}
+            {entitlements.canWrite
+              ? t('You can view this booking but not change its status.')
+              : t('Your plan is not active, so this booking cannot be updated.')}
           </Text>
         </View>
       ) : (

@@ -8,11 +8,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StarRating } from '../../components/StarRating';
-import { reviewApi, subscriptionApi } from '../../api/endpoints';
+import { PlanStatusNotice } from '../../components/PlanNotice';
+import { reviewApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
 import { Icon, type IconName } from '../../components/Icon';
-import type { RatingSummary, SubscriptionSummary } from '../../types/models';
+import type { RatingSummary } from '../../types/models';
 import type { RootStackParamList, SettingsProviderStackParamList } from '../../navigation/types';
 
 type NavigationProp = NativeStackNavigationProp<SettingsProviderStackParamList & RootStackParamList>;
@@ -50,9 +51,8 @@ function SettingsMenuItem({ iconName, iconColor, iconBg, label, subtitle, onPres
 export default function SettingsProvider() {
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
-  const { userDetail, logout } = useAuth();
+  const { userDetail, logout, entitlements, refreshProfile } = useAuth();
   const [rating, setRating] = useState<RatingSummary | null>(null);
-  const [plan, setPlan] = useState<SubscriptionSummary | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -65,18 +65,11 @@ export default function SettingsProvider() {
           // The rating is supplementary: keep the settings screen usable without it.
         }
       })();
-      (async () => {
-        try {
-          const res: any = await subscriptionApi.getMySubscription();
-          if (mounted) setPlan(res?.data ?? null);
-        } catch {
-          // Falls back to the label cached on the account at login.
-        }
-      })();
+      refreshProfile();
       return () => {
         mounted = false;
       };
-    }, []),
+    }, [refreshProfile]),
   );
 
   function confirmLogout() {
@@ -98,8 +91,8 @@ export default function SettingsProvider() {
   }
 
   // "Free" until the provider buys a plan, then the plan's own name.
-  const planLabel = plan?.planLabel || userDetail?.planLabel || userDetail?.plan_name || 'Free';
-  const isSubscribed = plan ? plan.isSubscribed : !!userDetail?.plan_name;
+  const planLabel = entitlements.planLabel;
+  const isSubscribed = entitlements.isActive && entitlements.state !== 'open';
 
   const initialLetter = userDetail?.name ? userDetail.name.charAt(0).toUpperCase() : 'P';
 
@@ -142,6 +135,12 @@ export default function SettingsProvider() {
           <Text style={styles.editProfileBtnText}>{t('Edit')}</Text>
         </TouchableOpacity>
       </View>
+
+      <PlanStatusNotice
+        entitlements={entitlements}
+        onViewPlans={() => navigation.navigate('ManagePlansProvider')}
+        style={styles.planNotice}
+      />
 
       {/* Language Preference Section */}
       <LanguageSwitcher />
@@ -186,7 +185,11 @@ export default function SettingsProvider() {
             isSubscribed
               ? t('{{plan}} plan · renews {{date}}', {
                   plan: planLabel,
-                  date: moment(plan?.endDate).format('DD MMM YYYY'),
+                  date: moment(entitlements.endDate).format('DD MMM YYYY'),
+                })
+              : entitlements.state === 'expired'
+              ? t('Expired on {{date}} · tap to renew', {
+                  date: moment(entitlements.endDate).format('DD MMM YYYY'),
                 })
               : t('You are on the Free plan · tap to upgrade')
           }
@@ -272,6 +275,10 @@ const styles = StyleSheet.create({
   },
   scroll: {
     paddingBottom: 40,
+  },
+  planNotice: {
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
   profileCard: {
     flexDirection: 'row',

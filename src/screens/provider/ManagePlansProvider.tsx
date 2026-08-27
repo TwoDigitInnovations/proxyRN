@@ -121,12 +121,12 @@ export default function ManagePlansProvider() {
     }, [load]),
   );
 
-  /** Keeps the plan badge on the settings and profile screens in step. */
   const cacheOnUser = useCallback(
     async (next: SubscriptionSummary | null) => {
       if (!userDetail) return;
       await updateUserDetail({
         ...userDetail,
+        subscription: next,
         plan_name: next?.subscription?.planName ?? null,
         plan_cycle: next?.billingCycle ?? null,
         plan_expires_at: next?.endDate ?? null,

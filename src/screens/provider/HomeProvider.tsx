@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
 import { EmptyState } from '../../components/EmptyState';
+import { PlanStatusNotice } from '../../components/PlanNotice';
 import { appointmentApi, authApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -25,7 +26,7 @@ interface VisitorsStatus {
 export default function HomeProvider() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<ProviderTabParamList>>();
-  const { userDetail, updateUserDetail } = useAuth();
+  const { userDetail, updateUserDetail, entitlements } = useAuth();
   const { showToast } = useUi();
 
   const [loading, setLoading] = useState(true);
@@ -61,6 +62,11 @@ export default function HomeProvider() {
   }
 
   async function toggleAvailability(value: boolean) {
+    // Listing yourself as open for business is itself a paid action.
+    if (!entitlements.canWrite) {
+      showToast(t('Renew your plan to change your availability.'));
+      return;
+    }
     setIsAvailable(value);
     setTogglingAvailability(true);
     try {
@@ -106,6 +112,12 @@ export default function HomeProvider() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}>
         <PageHeader title={t('Hi, {{name}}', { name: userDetail?.name ?? t('Provider') })} />
 
+        <PlanStatusNotice
+          entitlements={entitlements}
+          onViewPlans={() => navigation.navigate('SettingsProvider', { screen: 'ManagePlansProvider' })}
+          style={styles.planNotice}
+        />
+
         <View style={styles.availabilityRow}>
           <View>
             <Text style={styles.availabilityTitle}>{t('Accepting Appointments')}</Text>
@@ -114,7 +126,7 @@ export default function HomeProvider() {
           <Switch
             value={isAvailable}
             onValueChange={toggleAvailability}
-            disabled={togglingAvailability}
+            disabled={togglingAvailability || !entitlements.canWrite}
             trackColor={{ true: colors.primaryAlt, false: '#D1D5DB' }}
           />
         </View>
@@ -167,6 +179,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: '#F8F9FA' },
   loading: { flex: 1 },
   scroll: { paddingBottom: 40 },
+  planNotice: { marginHorizontal: 16, marginBottom: 16 },
   availabilityRow: {
     flexDirection: 'row',
     alignItems: 'center',

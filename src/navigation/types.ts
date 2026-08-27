@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
 export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
@@ -21,7 +23,7 @@ export type ProviderTabParamList = {
   HomeProvider: undefined;
   MyAppointmentsProvider: undefined;
   HistoryProvider: undefined;
-  SettingsProvider: undefined;
+  SettingsProvider: NavigatorScreenParams<SettingsProviderStackParamList> | undefined;
 };
 
 export type MyAppointmentsStackParamList = {

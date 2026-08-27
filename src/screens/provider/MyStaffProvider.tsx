@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
+import { PlanNotice, PlanStatusNotice } from '../../components/PlanNotice';
 import { serviceApi, staffApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import {
@@ -33,10 +37,13 @@ import {
   type PermissionKey,
 } from '../../utils/permissions';
 import type { ServiceListing, StaffMember } from '../../types/models';
+import type { SettingsProviderStackParamList } from '../../navigation/types';
 
 export default function MyStaffProvider() {
   const { t } = useTranslation();
   const { showLoading, hideLoading, showToast } = useUi();
+  const { entitlements } = useAuth();
+  const navigation = useNavigation<NativeStackNavigationProp<SettingsProviderStackParamList>>();
 
   const [viewMode, setViewMode] = useState<'list' | 'form'>('list');
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -51,6 +58,13 @@ export default function MyStaffProvider() {
   const [permissions, setPermissions] = useState<PermissionKey[]>(DEFAULT_STAFF_PERMISSIONS);
   const [isActive, setIsActive] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+
+  // Staff seats are a plan allowance: Starter ships with none at all.
+  const seatLimit = entitlements.limitOf('staffAccounts');
+  const seatsLeft = entitlements.remaining('staffAccounts', staffList.length);
+  const hasSeat = entitlements.hasRoom('staffAccounts', staffList.length);
+  const canManage = entitlements.canWrite;
+  const openPlans = () => navigation.navigate('ManagePlansProvider');
 
   async function loadStaff() {
     try {
@@ -84,6 +98,18 @@ export default function MyStaffProvider() {
   }
 
   function startAddStaff() {
+    if (!canManage) {
+      showToast(t('Renew your plan to add a staff member.'));
+      return;
+    }
+    if (!hasSeat) {
+      showToast(
+        seatLimit <= 0
+          ? t('Your plan does not include staff accounts.')
+          : t('Your plan covers {{limit}} staff accounts and all of them are in use.', { limit: seatLimit }),
+      );
+      return;
+    }
     if (services.length === 0) {
       showToast(t('Create a service first, then assign staff to it.'));
       return;
@@ -93,6 +119,10 @@ export default function MyStaffProvider() {
   }
 
   function startEditStaff(member: StaffMember) {
+    if (!canManage) {
+      showToast(t('Renew your plan to edit a staff member.'));
+      return;
+    }
     setStaffId(member._id);
     setName(member.name ?? '');
     setEmail(member.email ?? '');
@@ -115,6 +145,10 @@ export default function MyStaffProvider() {
   }
 
   function handleRemoveStaff(member: StaffMember) {
+    if (!canManage) {
+      showToast(t('Renew your plan to remove a staff member.'));
+      return;
+    }
     Alert.alert(
       t('Remove Staff'),
       t('Remove {{name}}? They will no longer be able to sign in.', { name: member.name }),
@@ -158,6 +192,18 @@ export default function MyStaffProvider() {
 
   async function handleSave() {
     setSubmitted(true);
+    if (!canManage) {
+      showToast(t('Renew your plan to save this staff member.'));
+      return;
+    }
+    if (!staffId && !hasSeat) {
+      showToast(
+        seatLimit <= 0
+          ? t('Your plan does not include staff accounts.')
+          : t('Your plan covers {{limit}} staff accounts and all of them are in use.', { limit: seatLimit }),
+      );
+      return;
+    }
     if (
       nameValidation ||
       emailValidation ||
@@ -208,13 +254,37 @@ export default function MyStaffProvider() {
           <View style={styles.headerText}>
             <Text style={styles.headerTitle}>{t('My Staff')}</Text>
             <Text style={styles.headerSubtitle}>
-              {t('{{total}} staff accounts', { total: staffList.length })}
+              {seatsLeft === null
+                ? t('{{total}} staff accounts', { total: staffList.length })
+                : t('{{total}} of {{limit}} staff accounts used', {
+                    total: staffList.length,
+                    limit: seatLimit,
+                  })}
             </Text>
           </View>
-          <TouchableOpacity style={styles.createBtn} onPress={startAddStaff}>
-            <Text style={styles.createBtnText}>{t('+ Add Staff')}</Text>
-          </TouchableOpacity>
+          {canManage && hasSeat ? (
+            <TouchableOpacity style={styles.createBtn} onPress={startAddStaff}>
+              <Text style={styles.createBtnText}>{t('+ Add Staff')}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
+
+        <PlanStatusNotice entitlements={entitlements} onViewPlans={openPlans} style={styles.planNotice} />
+
+        {canManage && !hasSeat ? (
+          <PlanNotice
+            tone="info"
+            title={seatLimit <= 0 ? t('Staff accounts are not in your plan') : t('Staff limit reached')}
+            message={
+              seatLimit <= 0
+                ? t('Your plan does not include staff accounts.')
+                : t('Your plan covers {{limit}} staff accounts and all of them are in use.', { limit: seatLimit })
+            }
+            onViewPlans={openPlans}
+            actionLabel={t('Upgrade plan')}
+            style={styles.planNotice}
+          />
+        ) : null}
 
         <Text style={styles.caption}>
           {t('Staff sign in with the email and password you set here, and only see the services you assign to them.')}
@@ -223,7 +293,9 @@ export default function MyStaffProvider() {
         {staffList.length === 0 ? (
           <View style={styles.emptyContainer}>
             <EmptyState message={t('No staff added yet.')} />
-            <PrimaryButton title={t('+ Add First Staff')} onPress={startAddStaff} style={styles.firstBtn} />
+            {canManage && hasSeat ? (
+              <PrimaryButton title={t('+ Add First Staff')} onPress={startAddStaff} style={styles.firstBtn} />
+            ) : null}
           </View>
         ) : (
           <View style={styles.cardList}>
@@ -271,14 +343,16 @@ export default function MyStaffProvider() {
                   ))}
                 </View>
 
-                <View style={styles.cardActions}>
-                  <TouchableOpacity style={styles.editBtn} onPress={() => startEditStaff(member)}>
-                    <Text style={styles.editBtnText}>✏️ {t('Edit')}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleRemoveStaff(member)}>
-                    <Text style={styles.deleteBtnText}>🗑️ {t('Remove')}</Text>
-                  </TouchableOpacity>
-                </View>
+                {canManage ? (
+                  <View style={styles.cardActions}>
+                    <TouchableOpacity style={styles.editBtn} onPress={() => startEditStaff(member)}>
+                      <Text style={styles.editBtnText}>✏️ {t('Edit')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.deleteBtn} onPress={() => handleRemoveStaff(member)}>
+                      <Text style={styles.deleteBtnText}>🗑️ {t('Remove')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
               </View>
             ))}
           </View>
@@ -432,6 +506,7 @@ const styles = StyleSheet.create({
   createBtn: { backgroundColor: colors.primary, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
   createBtnText: { color: colors.white, fontSize: 13, fontWeight: '600' },
   caption: { fontSize: 13, color: colors.gray, marginTop: 14, marginBottom: 18, lineHeight: 19 },
+  planNotice: { marginTop: 16 },
   emptyContainer: { marginTop: 30, alignItems: 'center' },
   firstBtn: { marginTop: 20, width: '80%' },
   cardList: { gap: 16 },
