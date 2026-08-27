@@ -82,6 +82,11 @@ export default function MyAppointmentsDetailsProvider() {
 
   const visitorName = appointment.name || appointment.user?.name || t('Visitor');
   const isPending = appointment.status === 'Pending';
+  // Set only when the agency raised the ticket at its own desk.
+  const bookedByName =
+    appointment.bookedByRole && appointment.bookedByRole !== 'user' && typeof appointment.bookedBy === 'object'
+      ? appointment.bookedBy?.name
+      : undefined;
 
   return (
     <ScrollView style={styles.flex} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -139,7 +144,22 @@ export default function MyAppointmentsDetailsProvider() {
           }>
           <InfoRow label={t('Method')} value={appointment.paymentMethod} />
           <InfoRow label={t('Amount')} value={`$${appointment.paymentAmount?.toFixed(2) ?? '5.50'}`} />
-          <InfoRow label={t('Transaction ID')} value={appointment.transactionId} last />
+          {appointment.transactionId ? (
+            <InfoRow label={t('Transaction ID')} value={appointment.transactionId} last />
+          ) : null}
+          {appointment.paymentStatus === 'Pending' ? (
+            <Text style={styles.paymentDueText}>
+              {t('To be collected at the counter before the visitor is served.')}
+            </Text>
+          ) : null}
+        </SectionCard>
+      ) : null}
+
+      {bookedByName ? (
+        <SectionCard title={t('Booked at the counter')}>
+          <Text style={styles.bodyText}>
+            {t('Raised by {{name}} for this visitor.', { name: bookedByName })}
+          </Text>
         </SectionCard>
       ) : null}
 
@@ -165,6 +185,7 @@ export default function MyAppointmentsDetailsProvider() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.white },
+  paymentDueText: { fontSize: 12, color: '#B45309', marginTop: 10 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, backgroundColor: colors.white },
   errorIconCircle: {
     width: 56,

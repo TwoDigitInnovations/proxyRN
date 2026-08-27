@@ -5,6 +5,11 @@ export type Gender = 'Male' | 'Female' | 'Other';
 /** The four methods offered at every checkout - ticket booking and plans alike. */
 export type PaymentMethod = 'Orange Money' | 'PayPal' | 'Stripe' | 'Credit Card';
 
+export const COUNTER_PAYMENT_METHOD = 'Pay on Counter';
+
+/** What a queue ticket can be paid with: the online methods, or cash at the desk. */
+export type BookingPaymentMethod = PaymentMethod | typeof COUNTER_PAYMENT_METHOD;
+
 export interface Category {
   _id: string;
   name: string;
@@ -69,14 +74,20 @@ export interface Appointment {
   full_date: string;
   status: 'Pending' | 'Completed';
   ticketNumber?: string;
-  paymentMethod?: PaymentMethod;
+  paymentMethod?: BookingPaymentMethod;
   paymentAmount?: number;
   transactionId?: string;
   paymentStatus?: 'Completed' | 'Pending';
-  service?: string;
+  /** An id in the lists; the single-ticket route populates name and address. */
+  service?: string | { _id: string; service_name?: string; address?: string };
   service_ref?: string;
   service_provider?: ServiceProviderUser;
   user?: ServiceProviderUser;
+  /** Where the ticket was raised. Agency bookings are `counter`. */
+  source?: 'remote' | 'counter' | 'kiosk';
+  /** Set when somebody other than the visitor booked it - the agency at its desk. */
+  bookedBy?: { _id: string; name?: string; role?: string } | string;
+  bookedByRole?: 'user' | 'provider' | 'staff' | 'admin';
   review?: Review | null;
   createdAt: string;
 }

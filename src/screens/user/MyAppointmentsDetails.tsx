@@ -123,7 +123,14 @@ export default function MyAppointmentsDetails() {
           }>
           <InfoRow label={t('Method')} value={appointment.paymentMethod} />
           <InfoRow label={t('Amount')} value={`$${appointment.paymentAmount?.toFixed(2) ?? '5.50'}`} />
-          <InfoRow label={t('Transaction ID')} value={appointment.transactionId} last />
+          {appointment.transactionId ? (
+            <InfoRow label={t('Transaction ID')} value={appointment.transactionId} last />
+          ) : null}
+          {appointment.paymentStatus === 'Pending' ? (
+            <Text style={styles.paymentDueText}>
+              {t('To be collected at the counter before the visitor is served.')}
+            </Text>
+          ) : null}
         </SectionCard>
       ) : null}
 
@@ -179,6 +186,7 @@ const styles = StyleSheet.create({
   heroStatus: { marginTop: 12, backgroundColor: colors.white },
 
   cardAction: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  paymentDueText: { fontSize: 12, color: '#B45309', marginTop: 10 },
   bodyText: { fontSize: 14, lineHeight: 21, color: colors.textDark, marginTop: 12 },
   bodyTextEmpty: { color: colors.grayLight },
 

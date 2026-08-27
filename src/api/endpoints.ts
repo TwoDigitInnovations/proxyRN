@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import type { PermissionKey } from '../utils/permissions';
+import type { BookingPaymentMethod } from '../types/models';
 
 export type UserRole = 'user' | 'provider' | 'staff';
 
@@ -57,9 +58,10 @@ export interface CreateAppointmentPayload {
   time: string;
   service: string;
   full_date: string;
-  service_provider: string;
+  /** Optional: the server always takes the owner off the service itself. */
+  service_provider?: string;
   service_ref: string;
-  paymentMethod?: string;
+  paymentMethod?: BookingPaymentMethod;
   paymentAmount?: number;
   transactionId?: string;
   paymentStatus?: string;

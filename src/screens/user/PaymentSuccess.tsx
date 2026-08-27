@@ -7,6 +7,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { appointmentApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
 import { Icon } from '../../components/Icon';
 import type { Appointment } from '../../types/models';
@@ -17,6 +18,11 @@ export default function PaymentSuccess() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, 'PaymentSuccess'>>();
   const { appointmentId } = route.params;
+  const { userDetail } = useAuth();
+
+  const role = userDetail?.role;
+  const appointmentsTab =
+    role === 'provider' ? 'MyAppointmentsProvider' : role === 'staff' ? 'MyAppointmentsStaff' : 'History';
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,6 +74,9 @@ export default function PaymentSuccess() {
     ? appointment.service.service_name
     : t('Queue Reservation');
 
+  // "Pay on Counter" issues the ticket now and leaves the fee to the desk.
+  const unpaid = appointment.paymentStatus === 'Pending';
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       {/* Success Celebration Badge */}
@@ -78,7 +87,11 @@ export default function PaymentSuccess() {
           </View>
         </View>
         <Text style={styles.title}>{t('Appointment Confirmed!')}</Text>
-        <Text style={styles.subtitle}>{t('Your queue ticket reservation is secured')}</Text>
+        <Text style={styles.subtitle}>
+          {role === 'provider' || role === 'staff'
+            ? t('The queue ticket for {{visitor}} is secured', { visitor: appointment.name })
+            : t('Your queue ticket reservation is secured')}
+        </Text>
       </View>
 
       {/* Ticket Pass Card */}
@@ -157,26 +170,38 @@ export default function PaymentSuccess() {
           </View>
 
           <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>{t('Amount Paid')}</Text>
+            <Text style={styles.receiptLabel}>{unpaid ? t('Amount Due') : t('Amount Paid')}</Text>
             <Text style={styles.receiptAmountVal}>
               ${appointment.paymentAmount ? appointment.paymentAmount.toFixed(2) : '5.50'}
             </Text>
           </View>
 
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>{t('Transaction Reference')}</Text>
-            <Text style={styles.receiptValSmall}>{appointment.transactionId || 'TXN-98214-77'}</Text>
-          </View>
+          {appointment.transactionId ? (
+            <View style={styles.receiptRow}>
+              <Text style={styles.receiptLabel}>{t('Transaction Reference')}</Text>
+              <Text style={styles.receiptValSmall}>{appointment.transactionId}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>{t('Payment Status')}</Text>
-            <View style={styles.completedBadge}>
-              <Icon name="check-circle" size={12} color="#15803D" />
-              <Text style={styles.completedBadgeText}>
+            <View style={[styles.completedBadge, unpaid && styles.pendingBadge]}>
+              <Icon
+                name={unpaid ? 'clock' : 'check-circle'}
+                size={12}
+                color={unpaid ? '#B45309' : '#15803D'}
+              />
+              <Text style={[styles.completedBadgeText, unpaid && styles.pendingBadgeText]}>
                 {t(appointment.paymentStatus || 'Completed')}
               </Text>
             </View>
           </View>
+
+          {unpaid ? (
+            <Text style={styles.pendingNote}>
+              {t('To be collected at the counter before the visitor is served.')}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -189,7 +214,7 @@ export default function PaymentSuccess() {
         />
         <TouchableOpacity
           style={styles.historyLink}
-          onPress={() => navigation.navigate('Tabs', { screen: 'History' } as any)}>
+          onPress={() => navigation.navigate('Tabs', { screen: appointmentsTab } as any)}>
           <Icon name="file-text" size={16} color={colors.primaryAlt} />
           <Text style={styles.historyLinkText}>{t('View All My Appointments')}</Text>
         </TouchableOpacity>
@@ -425,6 +450,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#15803D',
   },
+  pendingBadge: { backgroundColor: '#FEF3C7' },
+  pendingBadgeText: { color: '#B45309' },
+  pendingNote: { fontSize: 11, color: '#B45309', marginTop: 4 },
   buttonGroup: {
     width: '100%',
     marginTop: 20,

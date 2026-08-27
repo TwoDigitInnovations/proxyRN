@@ -9,6 +9,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
 import { EmptyState } from '../../components/EmptyState';
 import { PlanStatusNotice } from '../../components/PlanNotice';
+import { Icon } from '../../components/Icon';
 import { appointmentApi, authApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -59,6 +60,14 @@ export default function HomeProvider() {
   function onRefresh() {
     setRefreshing(true);
     load();
+  }
+
+  function openBooking() {
+    if (!entitlements.canWrite) {
+      showToast(t(entitlements.lockKey('Renew your plan to book visitors in.')));
+      return;
+    }
+    navigation.navigate('MyAppointmentsProvider', { screen: 'BookForVisitor' });
   }
 
   async function toggleAvailability(value: boolean) {
@@ -131,6 +140,19 @@ export default function HomeProvider() {
           />
         </View>
 
+        <TouchableOpacity style={styles.bookRow} onPress={openBooking} activeOpacity={0.85}>
+          <View style={styles.bookIconCircle}>
+            <Icon name="calendar" size={18} color={colors.white} />
+          </View>
+          <View style={styles.bookTextWrap}>
+            <Text style={styles.bookTitle}>{t('Book for a Visitor')}</Text>
+            <Text style={styles.bookSubtitle}>
+              {t('Raise a queue ticket for someone at your counter')}
+            </Text>
+          </View>
+          <Icon name="chevron-right" size={16} color={colors.gray} />
+        </TouchableOpacity>
+
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: '#E8F0FE' }]}>
             <Text style={[styles.statValue, { color: '#1D4ED8' }]}>{status?.totalAppoint ?? 0}</Text>
@@ -198,6 +220,29 @@ const styles = StyleSheet.create({
   },
   availabilityTitle: { fontSize: 15, fontWeight: '700', color: colors.textDarker },
   availabilitySubtitle: { fontSize: 12, color: colors.gray, marginTop: 2 },
+  bookRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#EFEFEF',
+  },
+  bookIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.primaryAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bookTextWrap: { flex: 1 },
+  bookTitle: { fontSize: 15, fontWeight: '700', color: colors.textDarker },
+  bookSubtitle: { fontSize: 12, color: colors.gray, marginTop: 2 },
   statsRow: { flexDirection: 'row', marginHorizontal: 16, gap: 10, marginBottom: 20 },
   statCard: {
     flex: 1,

@@ -21,7 +21,7 @@ export type UserTabParamList = {
 
 export type ProviderTabParamList = {
   HomeProvider: undefined;
-  MyAppointmentsProvider: undefined;
+  MyAppointmentsProvider: NavigatorScreenParams<MyAppointmentsProviderStackParamList> | undefined;
   HistoryProvider: undefined;
   SettingsProvider: NavigatorScreenParams<SettingsProviderStackParamList> | undefined;
 };
@@ -40,6 +40,7 @@ export type SettingsStackParamList = {
 export type MyAppointmentsProviderStackParamList = {
   MyAppointmentsProvider: undefined;
   MyAppointmentsDetailsProvider: { appointmentId: string };
+  BookForVisitor: undefined;
 };
 
 export type SettingsProviderStackParamList = {
@@ -53,7 +54,7 @@ export type SettingsProviderStackParamList = {
 
 export type StaffTabParamList = {
   HomeStaff: undefined;
-  MyAppointmentsStaff: undefined;
+  MyAppointmentsStaff: NavigatorScreenParams<MyAppointmentsProviderStackParamList> | undefined;
   HistoryStaff: undefined;
   SettingsStaff: NavigatorScreenParams<SettingsStaffStackParamList> | undefined;
 };
