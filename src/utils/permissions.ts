@@ -6,6 +6,7 @@ export const PERMISSIONS = [
   'dashboard.view',
   'appointments.view',
   'appointments.manage',
+  'appointments.book',
   'queue.manage',
   'history.view',
   'services.view',
@@ -32,6 +33,7 @@ export const DEFAULT_STAFF_PERMISSIONS: PermissionKey[] = [
 /** Permissions that only make sense once the one they build on is granted. */
 const IMPLIED_BY: Partial<Record<PermissionKey, PermissionKey[]>> = {
   'appointments.manage': ['appointments.view'],
+  'appointments.book': ['appointments.view'],
   'queue.manage': ['appointments.view'],
   'services.manage': ['services.view'],
   'subscription.manage': ['subscription.view'],
@@ -77,6 +79,11 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
         key: 'appointments.manage',
         label: 'Manage appointments',
         description: 'Mark a visit completed and change its status',
+      },
+      {
+        key: 'appointments.book',
+        label: 'Book for a visitor',
+        description: "Raise a queue ticket at the counter on a visitor's behalf",
       },
       {
         key: 'queue.manage',

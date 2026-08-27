@@ -12,6 +12,7 @@ import { Icon } from '../../components/Icon';
 import { appointmentApi } from '../../api/endpoints';
 import { usePaginatedList } from '../../hooks/usePaginatedList';
 import { useAuth } from '../../context/AuthContext';
+import { describeBookedBy } from '../../utils/bookedBy';
 import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import type { Appointment } from '../../types/models';
@@ -20,9 +21,10 @@ import type { MyAppointmentsProviderStackParamList } from '../../navigation/type
 export default function MyAppointmentsProvider() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<MyAppointmentsProviderStackParamList>>();
-  const { can, entitlements } = useAuth();
+  const { userDetail, can, entitlements } = useAuth();
   const { showToast } = useUi();
-  const canBook = can('appointments.manage');
+  const canBook = can('appointments.book');
+  const showBookedBy = userDetail?.role !== 'staff';
 
   function openBooking() {
     if (!entitlements.canWrite) {
@@ -87,6 +89,7 @@ export default function MyAppointmentsProvider() {
               title={item.user?.name ?? item.name ?? t('Visitor')}
               subtitle={item.purpose_of_visit}
               dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
+              meta={showBookedBy ? t('Booked by: {{who}}', { who: describeBookedBy(item, t) }) : undefined}
               status={item.status}
               avatarUrl={item.user?.profile}
               onPress={() => navigation.navigate('MyAppointmentsDetailsProvider', { appointmentId: item._id })}

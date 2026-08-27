@@ -574,7 +574,12 @@
   "To be collected at the counter before the visitor is served.": "À encaisser au guichet avant que le visiteur soit reçu.",
   "Amount Due": "Montant dû",
   "The queue ticket for {{visitor}} is secured": "Le ticket de file de {{visitor}} est confirmé",
-  "Booked at the counter": "Réservé au guichet",
-  "Raised by {{name}} for this visitor.": "Créé par {{name}} pour ce visiteur.",
-  "Your provider has not given you access to this feature": "Votre prestataire ne vous a pas donné accès à cette fonctionnalité"
+  "Your provider has not given you access to this feature": "Votre prestataire ne vous a pas donné accès à cette fonctionnalité",
+  "Booked by": "Réservé par",
+  "Provider - {{name}}": "Prestataire - {{name}}",
+  "Staff - {{name}}": "Personnel - {{name}}",
+  "Admin": "Administrateur",
+  "Book for a visitor": "Réserver pour un visiteur",
+  "Raise a queue ticket at the counter on a visitor's behalf": "Émettre un ticket de file au guichet pour le compte d'un visiteur",
+  "Booked by: {{who}}": "Réservé par : {{who}}"
 }

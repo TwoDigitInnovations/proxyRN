@@ -84,7 +84,7 @@ export default function BookForVisitorProvider() {
   const { showLoading, hideLoading, showToast } = useUi();
   const { addNotification } = useNotifications();
 
-  const canBook = can('appointments.manage') && entitlements.canWrite;
+  const canBook = can('appointments.book') && entitlements.canWrite;
 
   const [loading, setLoading] = useState(true);
   const [services, setServices] = useState<StaffServiceQueue[]>([]);
@@ -344,7 +344,7 @@ export default function BookForVisitorProvider() {
         {!entitlements.canWrite ? (
           <PlanStatusNotice entitlements={entitlements} style={styles.notice} />
         ) : null}
-        {!can('appointments.manage') ? (
+        {!can('appointments.book') ? (
           <View style={styles.errorCard}>
             <Icon name="lock" size={18} color="#B91C1C" />
             <Text style={styles.errorCardText}>

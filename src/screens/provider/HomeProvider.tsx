@@ -13,6 +13,7 @@ import { Icon } from '../../components/Icon';
 import { appointmentApi, authApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { describeBookedBy } from '../../utils/bookedBy';
 import { useUi } from '../../context/UiContext';
 import { colors } from '../../theme/colors';
 import type { Appointment } from '../../types/models';
@@ -182,9 +183,10 @@ export default function HomeProvider() {
             appointments.map(item => (
               <AppointmentListItem
                 key={item._id}
-                title={item.user?.name ?? t('Visitor')}
+                title={item.user?.name ?? item.name ?? t('Visitor')}
                 subtitle={item.purpose_of_visit}
                 dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
+                meta={t('Booked by: {{who}}', { who: describeBookedBy(item, t) })}
                 status={item.status}
                 avatarUrl={item.user?.profile}
                 onPress={() => navigation.navigate('MyAppointmentsProvider' as never)}

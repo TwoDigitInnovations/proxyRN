@@ -39,7 +39,7 @@ export default function HomeStaff() {
   const { userDetail, can, entitlements } = useAuth();
   const { showToast } = useUi();
   const canSeeAppointments = can('appointments.view');
-  const canBook = can('appointments.manage');
+  const canBook = can('appointments.book');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);

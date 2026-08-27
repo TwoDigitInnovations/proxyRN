@@ -8,6 +8,7 @@ interface AppointmentListItemProps {
   title: string;
   subtitle?: string;
   dateLabel: string;
+  meta?: string;
   status: AppointmentStatus;
   avatarUrl?: string;
   onPress?: () => void;
@@ -18,6 +19,7 @@ export function AppointmentListItem({
   title,
   subtitle,
   dateLabel,
+  meta,
   status,
   avatarUrl,
   onPress,
@@ -49,9 +51,16 @@ export function AppointmentListItem({
       <View style={styles.divider} />
 
       <View style={styles.footerRow}>
-        <Text style={styles.date} numberOfLines={1}>
-          {dateLabel}
-        </Text>
+        <View style={styles.footerText}>
+          <Text style={styles.date} numberOfLines={1}>
+            {dateLabel}
+          </Text>
+          {meta ? (
+            <Text style={styles.meta} numberOfLines={1}>
+              {meta}
+            </Text>
+          ) : null}
+        </View>
         <StatusPill status={status} />
       </View>
 
@@ -84,6 +93,8 @@ const styles = StyleSheet.create({
   chevron: { fontSize: 24, color: colors.grayLight, marginLeft: 8, marginTop: -2 },
   divider: { height: 1, backgroundColor: colors.backgroundLightAlt, marginVertical: 12 },
   footerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  date: { flex: 1, fontSize: 12, color: colors.grayAlt },
+  footerText: { flex: 1 },
+  date: { fontSize: 12, color: colors.grayAlt },
+  meta: { fontSize: 11, color: colors.grayLight, marginTop: 3 },
   footerSlot: { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.backgroundLightAlt, paddingTop: 12 },
 });

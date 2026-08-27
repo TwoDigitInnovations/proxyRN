@@ -9,13 +9,15 @@ import { EmptyState } from '../../components/EmptyState';
 import { appointmentApi } from '../../api/endpoints';
 import { usePaginatedList } from '../../hooks/usePaginatedList';
 import { useAuth } from '../../context/AuthContext';
+import { describeBookedBy } from '../../utils/bookedBy';
 import { colors } from '../../theme/colors';
 import type { Appointment } from '../../types/models';
 
 export default function HistoryProvider() {
   const { t } = useTranslation();
   // A staff login reads its parent provider's history, not its own id's.
-  const { agencyId: providerId, entitlements } = useAuth();
+  const { agencyId: providerId, userDetail, entitlements } = useAuth();
+  const showBookedBy = userDetail?.role !== 'staff';
 
   // How far back the plan lets the agency look. `null` means no cut-off.
   const retentionDays = entitlements.remaining('historyRetentionDays', 0);
@@ -54,9 +56,10 @@ export default function HistoryProvider() {
           ListEmptyComponent={<EmptyState message={t('No appointment history yet.')} />}
           renderItem={({ item }) => (
             <AppointmentListItem
-              title={item.user?.name ?? t('Visitor')}
+              title={item.user?.name ?? item.name ?? t('Visitor')}
               subtitle={item.purpose_of_visit}
               dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
+              meta={showBookedBy ? t('Booked by: {{who}}', { who: describeBookedBy(item, t) }) : undefined}
               status={item.status}
               avatarUrl={item.user?.profile}
             />
