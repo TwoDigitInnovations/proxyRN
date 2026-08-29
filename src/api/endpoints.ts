@@ -72,6 +72,12 @@ export interface PageParams {
   page: number;
 }
 
+export interface AppointmentListParams extends PageParams {
+  search?: string;
+  date?: string;
+  bookedBy?: 'visitor' | 'agency';
+}
+
 export const appointmentApi = {
   createAppointment: (data: CreateAppointmentPayload) =>
     apiClient.post('appointment/createAppointment', data),
@@ -79,7 +85,7 @@ export const appointmentApi = {
     apiClient.get(`appointment/getRequestAppointmentById/${id}`),
   getAppointmentByUser: (params: PageParams) =>
     apiClient.get('appointment/getAppointmentByUser', params),
-  getAppointmentByProvider: (params: PageParams) =>
+  getAppointmentByProvider: (params: AppointmentListParams) =>
     apiClient.get('appointment/getAppointmentByProvider', params),
   getRequestAppointmentByProviderId: (id: string) =>
     apiClient.get(`appointment/getRequestAppointmentByProviderId/${id}`),
@@ -87,7 +93,7 @@ export const appointmentApi = {
     apiClient.post('appointment/updateAppointmentStatusByProvider', data),
   getHistoryByUserId: (id: string, params: PageParams) =>
     apiClient.get(`appointment/getHistoryByUserId/${id}`, params),
-  getHistoryByProviderId: (id: string, params: PageParams) =>
+  getHistoryByProviderId: (id: string, params: AppointmentListParams) =>
     apiClient.get(`appointment/getHistoryByProviderId/${id}`, params),
   getVisitorsStatus: () => apiClient.get('appointment/getVisitorsStatus'),
   getAvailableSlots: (serviceId: string, params?: { date?: string }) =>

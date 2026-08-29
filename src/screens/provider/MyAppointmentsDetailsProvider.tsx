@@ -21,7 +21,7 @@ export default function MyAppointmentsDetailsProvider() {
   const route = useRoute<RouteProp<MyAppointmentsProviderStackParamList, 'MyAppointmentsDetailsProvider'>>();
   const { appointmentId } = route.params;
   const { showLoading, hideLoading, showToast } = useUi();
-  const { userDetail, can, entitlements } = useAuth();
+  const { can, entitlements } = useAuth();
   const canManage = can('appointments.manage') && entitlements.canWrite;
 
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -83,8 +83,6 @@ export default function MyAppointmentsDetailsProvider() {
 
   const visitorName = appointment.name || appointment.user?.name || t('Visitor');
   const isPending = appointment.status === 'Pending';
-  // Who raised the ticket is the provider's and the admin's business, not a staff member's.
-  const showBookedBy = userDetail?.role !== 'staff';
   const bookedByLabel = describeBookedBy(appointment, t);
 
   return (
@@ -126,7 +124,7 @@ export default function MyAppointmentsDetailsProvider() {
           value={moment(appointment.full_date).format('DD MMM YYYY, h:mm A')}
         />
         <InfoRow label={t('Booked on')} value={moment(appointment.createdAt).format('DD MMM YYYY')} />
-        {showBookedBy ? <InfoRow label={t('Booked by')} value={bookedByLabel} /> : null}
+        <InfoRow label={t('Booked by')} value={bookedByLabel} />
         <InfoRow label={t('Status')} value={t(appointment.status)} last />
       </SectionCard>
 

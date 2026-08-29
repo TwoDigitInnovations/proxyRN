@@ -581,5 +581,10 @@
   "Admin": "Administrateur",
   "Book for a visitor": "Réserver pour un visiteur",
   "Raise a queue ticket at the counter on a visitor's behalf": "Émettre un ticket de file au guichet pour le compte d'un visiteur",
-  "Booked by: {{who}}": "Réservé par : {{who}}"
+  "Booked by: {{who}}": "Réservé par : {{who}}",
+  "Provider / Staff": "Prestataire / Personnel",
+  "Search visitor, purpose or ticket": "Rechercher un visiteur, un motif ou un ticket",
+  "No matching appointments": "Aucun rendez-vous correspondant",
+  "Try another date, another search or clear the filters.": "Essayez une autre date, une autre recherche ou effacez les filtres.",
+  "No history matches these filters.": "Aucun historique ne correspond à ces filtres."
 }

@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -7,10 +7,18 @@ import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
+import {
+  AppointmentFilters,
+  appointmentFilterParams,
+  emptyAppointmentFilters,
+  hasActiveFilters,
+  type AppointmentFilterState,
+} from '../../components/AppointmentFilters';
 import { EmptyState } from '../../components/EmptyState';
 import { Icon } from '../../components/Icon';
 import { appointmentApi } from '../../api/endpoints';
 import { usePaginatedList } from '../../hooks/usePaginatedList';
+import { useDebouncedValue } from '../../hooks/useDebouncedValue';
 import { useAuth } from '../../context/AuthContext';
 import { describeBookedBy } from '../../utils/bookedBy';
 import { useUi } from '../../context/UiContext';
@@ -21,10 +29,17 @@ import type { MyAppointmentsProviderStackParamList } from '../../navigation/type
 export default function MyAppointmentsProvider() {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<MyAppointmentsProviderStackParamList>>();
-  const { userDetail, can, entitlements } = useAuth();
+  const { can, entitlements } = useAuth();
   const { showToast } = useUi();
   const canBook = can('appointments.book');
-  const showBookedBy = userDetail?.role !== 'staff';
+  const [filters, setFilters] = useState<AppointmentFilterState>(emptyAppointmentFilters);
+  const { date, bookedBy } = filters;
+  // Typing must not fire a request per keystroke; the other two apply at once.
+  const search = useDebouncedValue(filters.search);
+  const applied = useMemo(() => ({ search, date, bookedBy }), [search, date, bookedBy]);
+  const filtered = hasActiveFilters(applied);
+
+  const params = useMemo(() => appointmentFilterParams(applied), [applied]);
 
   function openBooking() {
     if (!entitlements.canWrite) {
@@ -34,10 +49,13 @@ export default function MyAppointmentsProvider() {
     navigation.navigate('BookForVisitor');
   }
 
-  const fetchPage = useCallback(async (page: number, limit: number) => {
-    const res: any = await appointmentApi.getAppointmentByProvider({ page, limit });
-    return (res?.data ?? []) as Appointment[];
-  }, []);
+  const fetchPage = useCallback(
+    async (page: number, limit: number) => {
+      const res: any = await appointmentApi.getAppointmentByProvider({ page, limit, ...params });
+      return (res?.data ?? []) as Appointment[];
+    },
+    [params],
+  );
 
   const { items, loading, refreshing, hasMore, refresh, loadMore } = usePaginatedList<Appointment>(fetchPage);
 
@@ -54,6 +72,8 @@ export default function MyAppointmentsProvider() {
           ) : undefined
         }
       />
+      {/* Kept outside the loading branch so the search box never loses focus. */}
+      <AppointmentFilters value={filters} onChange={setFilters} />
       {loading ? (
         <ActivityIndicator style={styles.loading} size="large" color={colors.primary} />
       ) : (
@@ -62,6 +82,7 @@ export default function MyAppointmentsProvider() {
           keyExtractor={item => item._id}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} colors={[colors.primary]} />}
           onEndReachedThreshold={0.4}
           onEndReached={loadMore}
@@ -78,18 +99,26 @@ export default function MyAppointmentsProvider() {
             ) : undefined
           }
           ListEmptyComponent={
-            <EmptyState
-              icon="📅"
-              title={t('No appointments yet')}
-              message={t('New visitor requests will appear here as soon as they are booked.')}
-            />
+            filtered ? (
+              <EmptyState
+                icon="🔍"
+                title={t('No matching appointments')}
+                message={t('Try another date, another search or clear the filters.')}
+              />
+            ) : (
+              <EmptyState
+                icon="📅"
+                title={t('No appointments yet')}
+                message={t('New visitor requests will appear here as soon as they are booked.')}
+              />
+            )
           }
           renderItem={({ item }) => (
             <AppointmentListItem
               title={item.user?.name ?? item.name ?? t('Visitor')}
               subtitle={item.purpose_of_visit}
               dateLabel={moment(item.full_date).format('DD MMM YYYY, h:mm A')}
-              meta={showBookedBy ? t('Booked by: {{who}}', { who: describeBookedBy(item, t) }) : undefined}
+              meta={t('Booked by: {{who}}', { who: describeBookedBy(item, t) })}
               status={item.status}
               avatarUrl={item.user?.profile}
               onPress={() => navigation.navigate('MyAppointmentsDetailsProvider', { appointmentId: item._id })}

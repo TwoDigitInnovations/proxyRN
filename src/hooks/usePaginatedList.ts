@@ -29,8 +29,9 @@ export function usePaginatedList<T>(fetchPage: (page: number, limit: number) => 
   );
 
   useEffect(() => {
+    setLoading(true);
     load(1, true);
-  }, [load]);
+  }, [load, fetchPage]);
 
   const refresh = useCallback(() => {
     setRefreshing(true);
