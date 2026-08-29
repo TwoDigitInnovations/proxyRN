@@ -193,7 +193,12 @@ export interface Subscription {
   durationDays: number;
   startDate: string;
   endDate: string;
-  status: 'Active' | 'Expired' | 'Cancelled';
+  status: 'Active' | 'Paused' | 'Expired' | 'Cancelled';
+  cancelledAt?: string;
+  pausedAt?: string;
+  resumedAt?: string;
+  remainingMs?: number;
+  daysRemaining?: number;
   paymentMethod?: PaymentMethod;
   paymentAmount?: number;
   transactionId?: string;
@@ -211,6 +216,7 @@ export interface SubscriptionSummary {
   endDate: string | null;
   daysRemaining: number;
   subscription: Subscription | null;
+  paused?: Subscription[];
 }
 
 export interface UserProfile {

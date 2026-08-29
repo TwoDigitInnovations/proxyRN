@@ -147,7 +147,10 @@ export const subscriptionApi = {
   getMySubscription: () => apiClient.get('subscription/getMySubscription'),
   getMySubscriptionHistory: () => apiClient.get('subscription/getMySubscriptionHistory'),
   subscribe: (data: SubscribePayload) => apiClient.post('subscription/subscribe', data),
-  cancelSubscription: () => apiClient.post('subscription/cancelSubscription', {}),
+  resumeSubscription: (subscriptionId: string) =>
+    apiClient.post('subscription/resumeSubscription', { subscriptionId }),
+  cancelSubscription: (subscriptionId?: string) =>
+    apiClient.post('subscription/cancelSubscription', subscriptionId ? { subscriptionId } : {}),
 };
 
 export const contentApi = {

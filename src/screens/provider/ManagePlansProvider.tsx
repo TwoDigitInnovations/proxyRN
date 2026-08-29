@@ -136,6 +136,18 @@ export default function ManagePlansProvider() {
     [userDetail, updateUserDetail],
   );
 
+  /** Re-reads the plan and the purchase list after a buy, resume or cancel. */
+  const refresh = useCallback(async () => {
+    const [mineRes, historyRes]: any[] = await Promise.all([
+      subscriptionApi.getMySubscription(),
+      subscriptionApi.getMySubscriptionHistory(),
+    ]);
+    const next: SubscriptionSummary | null = mineRes?.data ?? null;
+    setSummary(next);
+    setHistory(historyRes?.data ?? []);
+    await cacheOnUser(next);
+  }, [cacheOnUser]);
+
   function openCheckout(plan: Plan) {
     setCheckoutPlan(plan);
     setPaymentError(null);
@@ -191,11 +203,7 @@ export default function ManagePlansProvider() {
 
       const subscriptionId = res?.data?._id;
       closeCheckout();
-
-      const mineRes: any = await subscriptionApi.getMySubscription();
-      const next: SubscriptionSummary | null = mineRes?.data ?? null;
-      setSummary(next);
-      await cacheOnUser(next);
+      await refresh();
 
       if (subscriptionId) {
         navigation.navigate('SubscriptionSuccess', { subscriptionId });
@@ -207,25 +215,63 @@ export default function ManagePlansProvider() {
     }
   }
 
-  function confirmCancel() {
+  /** Cancels for good - the live plan when `target` is left out, else a paused one. */
+  function confirmCancel(target?: Subscription) {
+    const paused = !!target && target.status === 'Paused';
+    const message = paused
+      ? t('{{plan}} is paused with {{days}} days left. Cancelling throws those days away and it can no longer be resumed.', {
+          plan: target?.planName,
+          days: target?.daysRemaining ?? 0,
+        })
+      : pausedPlans.length > 0
+        ? t('Your agency goes back to the Free plan straight away. Your paused plans stay where they are and can still be resumed.')
+        : t('Your agency will go back to the Free plan straight away. Continue?');
+
+    Alert.alert(t('Cancel Subscription'), message, [
+      { text: t('Keep Plan'), style: 'cancel' },
+      {
+        text: t('Cancel Subscription'),
+        style: 'destructive',
+        onPress: async () => {
+          showLoading();
+          try {
+            await subscriptionApi.cancelSubscription(target?._id);
+            await refresh();
+            showToast(t('Subscription cancelled'));
+          } catch (err) {
+            showToast(err instanceof ApiError ? err.message : t('Something went wrong'));
+          } finally {
+            hideLoading();
+          }
+        },
+      },
+    ]);
+  }
+
+  /** Puts a paused plan back in service; the live one is paused in its place. */
+  function confirmResume(target: Subscription) {
     Alert.alert(
-      t('Cancel Subscription'),
-      t('Your agency will go back to the Free plan straight away. Continue?'),
+      t('Resume {{plan}}?', { plan: target.planName }),
+      isSubscribed
+        ? t('{{plan}} becomes your active plan with {{days}} days left, and {{current}} is paused. You can switch back whenever you like.', {
+            plan: target.planName,
+            days: target.daysRemaining ?? 0,
+            current: planLabel,
+          })
+        : t('{{plan}} becomes your active plan with {{days}} days left.', {
+            plan: target.planName,
+            days: target.daysRemaining ?? 0,
+          }),
       [
-        { text: t('Keep Plan'), style: 'cancel' },
+        { text: t('Not now'), style: 'cancel' },
         {
-          text: t('Cancel Subscription'),
-          style: 'destructive',
+          text: t('Resume'),
           onPress: async () => {
             showLoading();
             try {
-              await subscriptionApi.cancelSubscription();
-              const mineRes: any = await subscriptionApi.getMySubscription();
-              const next: SubscriptionSummary | null = mineRes?.data ?? null;
-              setSummary(next);
-              await cacheOnUser(next);
-              showToast(t('Subscription cancelled'));
-              load();
+              await subscriptionApi.resumeSubscription(target._id);
+              await refresh();
+              showToast(t('{{plan}} is active again', { plan: target.planName }));
             } catch (err) {
               showToast(err instanceof ApiError ? err.message : t('Something went wrong'));
             } finally {
@@ -250,6 +296,12 @@ export default function ManagePlansProvider() {
   const currentPlanKey = summary?.planKey ?? null;
   const isSubscribed = !!summary?.isSubscribed;
   const planLabel = summary?.planLabel || 'Free';
+  // Plans the provider already owns but has parked - resumable, not lost.
+  const pausedPlans = useMemo(() => summary?.paused ?? [], [summary]);
+  const pausedPlanKeys = useMemo(
+    () => new Set(pausedPlans.map(item => item.planKey)),
+    [pausedPlans],
+  );
 
   const checkoutAmount = useMemo(
     () => (checkoutPlan ? priceFor(checkoutPlan, cycle) : 0),
@@ -302,7 +354,7 @@ export default function ManagePlansProvider() {
                 </View>
               </View>
               {canManage ? (
-                <TouchableOpacity style={styles.cancelLink} onPress={confirmCancel} activeOpacity={0.7}>
+                <TouchableOpacity style={styles.cancelLink} onPress={() => confirmCancel()} activeOpacity={0.7}>
                   <Text style={styles.cancelLinkText}>{t('Cancel Subscription')}</Text>
                 </TouchableOpacity>
               ) : null}
@@ -313,6 +365,57 @@ export default function ManagePlansProvider() {
             </Text>
           )}
         </View>
+
+        {/* Paused plans - bought, parked, still resumable */}
+        {pausedPlans.length > 0 ? (
+          <View style={styles.pausedCard}>
+            <View style={styles.pausedHeader}>
+              <Icon name="pause-circle" size={16} color="#B45309" />
+              <Text style={styles.pausedTitle}>{t('PAUSED PLANS')}</Text>
+            </View>
+            <Text style={styles.pausedHint}>
+              {t('These plans keep the days you paid for. Resume one to make it active — your current plan is paused in its place.')}
+            </Text>
+
+            {pausedPlans.map(item => (
+              <View key={item._id} style={styles.pausedRow}>
+                <View style={styles.pausedRowTop}>
+                  <View style={styles.pausedRowLeft}>
+                    <Text style={styles.pausedPlanName}>{item.planName}</Text>
+                    <Text style={styles.pausedMeta}>
+                      {t(item.billingCycle === 'yearly' ? 'Yearly' : 'Monthly')}
+                      {item.pausedAt
+                        ? ` · ${t('paused {{date}}', { date: moment(item.pausedAt).format('DD MMM YYYY') })}`
+                        : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.pausedDaysChip}>
+                    <Text style={styles.pausedDaysValue}>{item.daysRemaining ?? 0}</Text>
+                    <Text style={styles.pausedDaysLabel}>{t('days left')}</Text>
+                  </View>
+                </View>
+
+                {canManage ? (
+                  <View style={styles.pausedActions}>
+                    <TouchableOpacity
+                      style={styles.resumeButton}
+                      activeOpacity={0.85}
+                      onPress={() => confirmResume(item)}>
+                      <Icon name="play-circle" size={14} color={colors.white} />
+                      <Text style={styles.resumeButtonText}>{t('Resume')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.pausedCancelButton}
+                      activeOpacity={0.85}
+                      onPress={() => confirmCancel(item)}>
+                      <Text style={styles.pausedCancelText}>{t('Cancel Subscription')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        ) : null}
 
         {/* Billing cycle switch */}
         <View style={styles.cycleSwitch}>
@@ -356,6 +459,11 @@ export default function ManagePlansProvider() {
                   <View style={styles.currentChip}>
                     <Icon name="check-circle" size={12} color="#15803D" />
                     <Text style={styles.currentChipText}>{t('Current')}</Text>
+                  </View>
+                ) : pausedPlanKeys.has(plan.key) ? (
+                  <View style={styles.pausedChip}>
+                    <Icon name="pause-circle" size={12} color="#B45309" />
+                    <Text style={styles.pausedChipText}>{t('Paused')}</Text>
                   </View>
                 ) : null}
               </View>
@@ -482,6 +590,15 @@ export default function ManagePlansProvider() {
                     : ''}
                 </Text>
               </View>
+
+              {isSubscribed ? (
+                <View style={styles.switchNote}>
+                  <Icon name="pause-circle" size={13} color="#B45309" />
+                  <Text style={styles.switchNoteText}>
+                    {t('{{plan}} will be paused, not cancelled. Its remaining days are kept and you can resume it whenever you want.', { plan: planLabel })}
+                  </Text>
+                </View>
+              ) : null}
 
               <View style={[styles.summaryRow, styles.summaryTotalRow]}>
                 <Text style={styles.summaryTotalLabel}>{t('Total Amount Due')}</Text>
@@ -685,6 +802,80 @@ const styles = StyleSheet.create({
   currentMetaValue: { fontSize: 14, fontWeight: '700', color: colors.textDarker, marginTop: 2 },
   cancelLink: { alignSelf: 'center', paddingVertical: 10, marginTop: 4 },
   cancelLinkText: { fontSize: 13, fontWeight: '600', color: '#DC2626' },
+
+  pausedCard: {
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  pausedHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  pausedTitle: { fontSize: 11, fontWeight: '700', color: '#B45309', letterSpacing: 0.5 },
+  pausedHint: { fontSize: 12, color: colors.gray, lineHeight: 18, marginTop: 8 },
+  pausedRow: {
+    marginTop: 14,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  pausedRowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pausedRowLeft: { flex: 1, paddingRight: 10 },
+  pausedPlanName: { fontSize: 15, fontWeight: '800', color: colors.textDarker },
+  pausedMeta: { fontSize: 11, color: colors.gray, marginTop: 3 },
+  pausedDaysChip: {
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  pausedDaysValue: { fontSize: 16, fontWeight: '800', color: '#B45309' },
+  pausedDaysLabel: { fontSize: 10, color: '#B45309' },
+  pausedActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+  resumeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.primaryAlt,
+    borderRadius: 12,
+    paddingVertical: 11,
+  },
+  resumeButtonText: { fontSize: 13, fontWeight: '700', color: colors.white },
+  pausedCancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
+  },
+  pausedCancelText: { fontSize: 13, fontWeight: '700', color: '#DC2626' },
+  pausedChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  pausedChipText: { fontSize: 10, fontWeight: '700', color: '#B45309' },
+  switchNote: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    backgroundColor: '#FFFBEB',
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 10,
+  },
+  switchNoteText: { flex: 1, fontSize: 11, color: '#92400E', lineHeight: 16 },
 
   cycleSwitch: {
     flexDirection: 'row',
