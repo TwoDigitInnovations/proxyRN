@@ -58,6 +58,15 @@ export default function HomeProvider() {
     load();
   }, [load]);
 
+  // The switch is seeded from whatever userDetail held at mount, which after a
+  // fresh login is the slim login payload. Follow the account once the full
+  // profile lands, so a provider who left bookings off sees them off.
+  useEffect(() => {
+    if (userDetail?.isAvailable !== undefined) {
+      setIsAvailable(userDetail.isAvailable);
+    }
+  }, [userDetail?.isAvailable]);
+
   function onRefresh() {
     setRefreshing(true);
     load();
@@ -131,7 +140,7 @@ export default function HomeProvider() {
         <View style={styles.availabilityRow}>
           <View>
             <Text style={styles.availabilityTitle}>{t('Accepting Appointments')}</Text>
-            <Text style={styles.availabilitySubtitle}>{t('Show agency listing as available on map')}</Text>
+            <Text style={styles.availabilitySubtitle}>{t('Turn off to stop new bookings. You stay on the map.')}</Text>
           </View>
           <Switch
             value={isAvailable}

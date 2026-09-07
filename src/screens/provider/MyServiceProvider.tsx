@@ -353,7 +353,7 @@ export default function MyServiceProvider() {
                   })}
             </Text>
           </View>
-          {canManage && hasListingRoom ? (
+          {canManage && hasListingRoom && servicesList.length > 0 ? (
             <TouchableOpacity style={styles.createBtn} onPress={startAddNewService}>
               <Text style={styles.createBtnText}>{t('+ Add Service')}</Text>
             </TouchableOpacity>

@@ -144,6 +144,8 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(() => buildBookingDates()[0].date);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  // The provider can flip "Accepting Appointments" off while this sheet is open.
+  const [slotsAccepting, setSlotsAccepting] = useState(true);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
   const [payName, setPayName] = useState('');
@@ -521,6 +523,7 @@ export default function Home() {
       const data = res?.data;
       if (Array.isArray(data?.dates) && data.dates.length > 0) setBookingDates(data.dates);
       if (Array.isArray(data?.slots)) setTimeSlots(data.slots);
+      setSlotsAccepting(data?.acceptingAppointments !== false);
     } catch {
       // Offline list already rendered.
     } finally {
@@ -540,6 +543,7 @@ export default function Home() {
     setSelectedDate(dates[0].date);
     setSelectedTime(null);
     setTimeSlots([]);
+    setSlotsAccepting(true);
     setShowServiceModal(false);
     setShowSlotModal(true);
   }
@@ -900,6 +904,15 @@ export default function Home() {
                   <Text style={styles.sheetBody}>{selectedService.service_description}</Text>
                 ) : null}
 
+                {selectedService.user?.isAvailable === false ? (
+                  <View style={styles.closedCard}>
+                    <Icon name="alert-triangle" size={16} color="#B45309" />
+                    <Text style={styles.closedText}>
+                      {t('This agency has paused online bookings. You can still visit the counter.')}
+                    </Text>
+                  </View>
+                ) : null}
+
                 <View style={styles.actionRow}>
                   <TouchableOpacity
                     style={styles.routeBtn}
@@ -908,10 +921,18 @@ export default function Home() {
                     <Text style={styles.routeBtnText}>{t('Get Directions')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.bookBtn}
+                    style={[
+                      styles.bookBtn,
+                      selectedService.user?.isAvailable === false && styles.bookBtnDisabled,
+                    ]}
+                    disabled={selectedService.user?.isAvailable === false}
                     onPress={onBookAppointment}>
                     <Icon name="calendar" size={16} color={colors.white} />
-                    <Text style={styles.bookBtnText}>{t('Book Ticket')}</Text>
+                    <Text style={styles.bookBtnText}>
+                      {selectedService.user?.isAvailable === false
+                        ? t('Bookings Paused')
+                        : t('Book Ticket')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
@@ -1001,7 +1022,11 @@ export default function Home() {
                 {t('This agency has not opened any time slots yet.')}
               </Text>
             ) : null}
-            {!slotsLoading && timeSlots.length > 0 && timeSlots.every(slot => !slot.isAvailable) ? (
+            {!slotsLoading && !slotsAccepting ? (
+              <Text style={styles.slotEmptyText}>
+                {t('This agency has paused online bookings. You can still visit the counter.')}
+              </Text>
+            ) : !slotsLoading && timeSlots.length > 0 && timeSlots.every(slot => !slot.isAvailable) ? (
               <Text style={styles.slotEmptyText}>
                 {t('No slots left for this day. Please pick another date.')}
               </Text>
@@ -1627,6 +1652,26 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 14,
     fontWeight: '700',
+  },
+  bookBtnDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  closedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#FEF3C7',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 14,
+  },
+  closedText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#92400E',
   },
   closeModalBtn: {
     alignItems: 'center',

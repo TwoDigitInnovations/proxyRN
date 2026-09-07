@@ -264,7 +264,7 @@ export default function MyStaffProvider() {
                   })}
             </Text>
           </View>
-          {canManage && hasSeat ? (
+          {canManage && hasSeat && staffList.length > 0 ? (
             <TouchableOpacity style={styles.createBtn} onPress={startAddStaff}>
               <Text style={styles.createBtnText}>{t('+ Add Staff')}</Text>
             </TouchableOpacity>

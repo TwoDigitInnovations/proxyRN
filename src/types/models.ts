@@ -22,6 +22,8 @@ export interface ServiceProviderUser {
   profile?: string;
   phone?: string;
   about_us?: string;
+  /** Provider's "Accepting Appointments" switch. false = listed, but closed to new bookings. */
+  isAvailable?: boolean;
 }
 
 export interface ServiceListing {
