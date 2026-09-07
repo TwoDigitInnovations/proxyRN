@@ -7,6 +7,7 @@ import {
   Linking,
   Modal,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -840,8 +841,8 @@ export default function Home() {
 
       {/* Service Detail Bottom Sheet Modal */}
       <Modal visible={showServiceModal} animationType="slide" transparent onRequestClose={() => setShowServiceModal(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.sheet, { paddingBottom: 24 + insets.bottom }]}>
+        <Pressable style={styles.modalOverlay} onPress={() => setShowServiceModal(false)}>
+          <Pressable style={[styles.sheet, { paddingBottom: 24 + insets.bottom }]} onPress={() => {}}>
             <View style={styles.sheetHandle} />
             {selectedService && (
               <>
@@ -919,8 +920,8 @@ export default function Home() {
                 </TouchableOpacity>
               </>
             )}
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Time Slot Modal */}

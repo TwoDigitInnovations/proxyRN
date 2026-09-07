@@ -649,6 +649,7 @@ export default function BookForVisitorProvider() {
                   keyboardType="number-pad"
                   maxLength={CVV_MAX}
                   secureTextEntry
+                  showPasswordToggle={false}
                   placeholder="123"
                   error={cardCvvError}
                 />

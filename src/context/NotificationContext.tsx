@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../components/Text';
 import { colors } from '../theme/colors';
@@ -85,8 +85,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       {children}
 
       <Modal visible={trayVisible} animationType="slide" transparent onRequestClose={closeNotificationTray}>
-        <View style={styles.overlay}>
-          <View style={styles.modalContent}>
+        <Pressable style={styles.overlay} onPress={closeNotificationTray}>
+          <Pressable style={styles.modalContent} onPress={() => {}}>
             <View style={styles.header}>
               <Text style={styles.headerTitle}>{t('Notifications & Reminders')}</Text>
               {notifications.length > 0 ? (
@@ -117,8 +117,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             <TouchableOpacity style={styles.closeBtn} onPress={closeNotificationTray}>
               <Text style={styles.closeBtnText}>{t('Close')}</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </NotificationContext.Provider>
   );

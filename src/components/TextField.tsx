@@ -1,18 +1,48 @@
-import React from 'react';
-import { StyleSheet, TextInput, TextInputProps, View } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native';
 import { Text } from './Text';
+import { Icon } from './Icon';
 import { colors } from '../theme/colors';
 
 interface TextFieldProps extends TextInputProps {
   label: string;
   error?: string;
+  /** Show the reveal (eye) button on a secure field. Defaults to true. */
+  showPasswordToggle?: boolean;
 }
 
-export function TextField({ label, error, style, ...rest }: TextFieldProps) {
+export function TextField({
+  label,
+  error,
+  style,
+  secureTextEntry,
+  showPasswordToggle = true,
+  ...rest
+}: TextFieldProps) {
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = !!secureTextEntry;
+  const withToggle = isPassword && showPasswordToggle;
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput style={[styles.input, style]} placeholderTextColor={colors.border} {...rest} />
+      <View style={styles.inputWrap}>
+        <TextInput
+          style={[styles.input, withToggle && styles.inputWithToggle, style]}
+          placeholderTextColor={colors.border}
+          secureTextEntry={isPassword && !revealed}
+          {...rest}
+        />
+        {withToggle ? (
+          <TouchableOpacity
+            style={styles.toggle}
+            onPress={() => setRevealed(prev => !prev)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button">
+            <Icon name={revealed ? 'eye' : 'eye-off'} size={20} color={colors.border} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -21,6 +51,7 @@ export function TextField({ label, error, style, ...rest }: TextFieldProps) {
 const styles = StyleSheet.create({
   container: { marginTop: 16 },
   label: { fontSize: 13, color: colors.gray, marginBottom: 6 },
+  inputWrap: { justifyContent: 'center' },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -29,6 +60,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     color: colors.gray,
+  },
+  inputWithToggle: { paddingRight: 46 },
+  toggle: {
+    position: 'absolute',
+    right: 14,
+    padding: 2,
   },
   error: { fontSize: 13, color: 'red', marginTop: 5 },
 });

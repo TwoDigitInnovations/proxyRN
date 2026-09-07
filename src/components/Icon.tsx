@@ -28,6 +28,8 @@ import {
   Crown,
   PauseCircle,
   PlayCircle,
+  Eye,
+  EyeOff,
   LucideProps
 } from 'lucide-react-native';
 
@@ -59,7 +61,9 @@ export type IconName =
   | 'message-square'
   | 'crown'
   | 'pause-circle'
-  | 'play-circle';
+  | 'play-circle'
+  | 'eye'
+  | 'eye-off';
 
 interface IconProps extends LucideProps {
   name: IconName;
@@ -125,6 +129,10 @@ export function Icon({ name, size = 20, color = '#363636', ...props }: IconProps
       return <PauseCircle size={size} color={color} {...props} />;
     case 'play-circle':
       return <PlayCircle size={size} color={color} {...props} />;
+    case 'eye':
+      return <Eye size={size} color={color} {...props} />;
+    case 'eye-off':
+      return <EyeOff size={size} color={color} {...props} />;
     default:
       return <User size={size} color={color} {...props} />;
   }
