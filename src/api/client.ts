@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const BASE_URL = 'https://proxyapp-backend.onrender.com/';
+export const BASE_URL = 'https://proxyapp-backend-518q.onrender.com/';
 
-// export const BASE_URL = 'http://192.168.1.9:3001/';
+// export const BASE_URL = 'http://192.168.1.2:3001/';
 
 export class ApiError extends Error {
   status: number;
@@ -58,10 +58,18 @@ async function handleResponse(res: Response) {
   return body;
 }
 
+async function doFetch(url: string, init: RequestInit) {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new ApiError(`Cannot reach the server at ${BASE_URL}`, 0, null);
+  }
+}
+
 async function send(method: 'POST' | 'PUT' | 'DELETE', path: string, data?: any) {
   const isFormData = data instanceof FormData;
   const headers = await authHeaders(isFormData);
-  const res = await fetch(BASE_URL + path, {
+  const res = await doFetch(BASE_URL + path, {
     method,
     headers,
     body: data === undefined ? undefined : isFormData ? data : JSON.stringify(data),
@@ -72,7 +80,7 @@ async function send(method: 'POST' | 'PUT' | 'DELETE', path: string, data?: any)
 export const apiClient = {
   async get(path: string, params?: Record<string, any>) {
     const headers = await authHeaders(false);
-    const res = await fetch(buildUrl(path, params), { method: 'GET', headers });
+    const res = await doFetch(buildUrl(path, params), { method: 'GET', headers });
     return handleResponse(res);
   },
   post: (path: string, data?: any) => send('POST', path, data),

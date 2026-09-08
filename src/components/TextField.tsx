@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { StyleSheet, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TextInput, TextInputFocusEvent, TextInputProps, TouchableOpacity, View } from 'react-native';
 import { Text } from './Text';
+import { useKeyboardFocusReporter } from './KeyboardAwareScrollView';
 import { Icon } from './Icon';
 import { colors } from '../theme/colors';
 
@@ -17,11 +18,19 @@ export function TextField({
   style,
   secureTextEntry,
   showPasswordToggle = true,
+  onFocus,
   ...rest
 }: TextFieldProps) {
   const [revealed, setRevealed] = useState(false);
   const isPassword = !!secureTextEntry;
   const withToggle = isPassword && showPasswordToggle;
+  const reportFocus = useKeyboardFocusReporter();
+
+  function handleFocus(event: TextInputFocusEvent) {
+    // Lets an enclosing KeyboardAwareScrollView lift this field above the keyboard.
+    reportFocus?.();
+    onFocus?.(event);
+  }
 
   return (
     <View style={styles.container}>
@@ -31,6 +40,7 @@ export function TextField({
           style={[styles.input, withToggle && styles.inputWithToggle, style]}
           placeholderTextColor={colors.border}
           secureTextEntry={isPassword && !revealed}
+          onFocus={handleFocus}
           {...rest}
         />
         {withToggle ? (

@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import {
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -82,61 +80,59 @@ export default function SignIn({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.welcomeBlock}>
-            <Text style={styles.welcomeText}>{t('Welcome')}</Text>
-            <Text style={styles.subText}>{t('Please enter your sign in details.')}</Text>
-          </View>
+      <KeyboardAwareScrollView style={styles.flex} contentContainerStyle={styles.scroll}>
+        <View style={styles.welcomeBlock}>
+          <Text style={styles.welcomeText}>{t('Welcome')}</Text>
+          <Text style={styles.subText}>{t('Please enter your sign in details.')}</Text>
+        </View>
 
-          <Image source={require('../../assets/images/bgImg.png')} style={styles.bgImage} resizeMode="contain" />
+        <Image source={require('../../assets/images/bgImg.png')} style={styles.bgImage} resizeMode="contain" />
 
-          <TextField
-            label={t('Email')}
-            placeholder={t('Enter email')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={254}
-            value={email}
-            onChangeText={value => setEmail(sanitizeEmail(value))}
-            error={emailError}
-          />
-          <TextField
-            label={t('Password')}
-            placeholder="**************"
-            secureTextEntry
-            maxLength={64}
-            value={password}
-            onChangeText={value => setPassword(sanitizePassword(value))}
-            error={passwordError}
-          />
+        <TextField
+          label={t('Email')}
+          placeholder={t('Enter email')}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={254}
+          value={email}
+          onChangeText={value => setEmail(sanitizeEmail(value))}
+          error={emailError}
+        />
+        <TextField
+          label={t('Password')}
+          placeholder="**************"
+          secureTextEntry
+          maxLength={64}
+          value={password}
+          onChangeText={value => setPassword(sanitizePassword(value))}
+          error={passwordError}
+        />
 
-          <Text style={styles.termsText}>
-            {t('By clicking Sign up, you agree with our')}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('TermsAndConditions')}>
-              {t('Terms and Conditions')}{' '}
-            </Text>
-            {t('and')}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
-              {t('Privacy Policy')}
-            </Text>
+        <Text style={styles.termsText}>
+          {t('By clicking Sign up, you agree with our')}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('TermsAndConditions')}>
+            {t('Terms and Conditions')}{' '}
           </Text>
-
-          <PrimaryButton title={t('Sign in')} onPress={handleSignIn} style={styles.signInButton} />
-
-          <Text style={styles.accountText}>
-            {t("Didn't have any account?")}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
-              {t('Sign up')}
-            </Text>
+          {t('and')}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
+            {t('Privacy Policy')}
           </Text>
+        </Text>
 
-          <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-            <Text style={styles.forgotPassword}>{t('Forget Password ?')}</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        <PrimaryButton title={t('Sign in')} onPress={handleSignIn} style={styles.signInButton} />
+
+        <Text style={styles.accountText}>
+          {t("Didn't have any account?")}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('SignUp')}>
+            {t('Sign up')}
+          </Text>
+        </Text>
+
+        <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.forgotPassword}>{t('Forget Password ?')}</Text>
+        </TouchableOpacity>
+      </KeyboardAwareScrollView>
 
       {/* Account Status Alert Modal Pop-up */}
       <Modal visible={statusModalVisible} animationType="fade" transparent onRequestClose={() => setStatusModalVisible(false)}>

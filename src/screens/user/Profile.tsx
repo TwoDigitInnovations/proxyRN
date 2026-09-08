@@ -2,13 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import moment from 'moment';
@@ -289,211 +288,208 @@ export default function Profile() {
   const hasCoordinates = latitude !== undefined && longitude !== undefined;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <TouchableOpacity
-            onPress={isEdit ? handlePickPhoto : undefined}
-            activeOpacity={isEdit ? 0.8 : 1}
-            style={styles.avatarWrap}>
-            <View style={styles.avatarRing}>
-              {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarInitial}>{(name || 'U').charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-            </View>
-            {isEdit ? (
-              <View style={styles.cameraBadge}>
-                <Text style={styles.cameraBadgeIcon}>✎</Text>
+    <KeyboardAwareScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.scroll}
+      showsVerticalScrollIndicator={false}>
+      <View style={styles.hero}>
+        <TouchableOpacity
+          onPress={isEdit ? handlePickPhoto : undefined}
+          activeOpacity={isEdit ? 0.8 : 1}
+          style={styles.avatarWrap}>
+          <View style={styles.avatarRing}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Text style={styles.avatarInitial}>{(name || 'U').charAt(0).toUpperCase()}</Text>
               </View>
-            ) : null}
-          </TouchableOpacity>
-
-          <Text style={styles.heroName} numberOfLines={1}>
-            {name || t('Your profile')}
-          </Text>
-          {email ? (
-            <Text style={styles.heroEmail} numberOfLines={1}>
-              {email}
-            </Text>
-          ) : null}
-
-          <View style={styles.heroBadge}>
-            <Text style={styles.heroBadgeText}>{t('Customer')}</Text>
+            )}
           </View>
+          {isEdit ? (
+            <View style={styles.cameraBadge}>
+              <Text style={styles.cameraBadgeIcon}>✎</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
 
-          {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
+        <Text style={styles.heroName} numberOfLines={1}>
+          {name || t('Your profile')}
+        </Text>
+        {email ? (
+          <Text style={styles.heroEmail} numberOfLines={1}>
+            {email}
+          </Text>
+        ) : null}
+
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeText}>{t('Customer')}</Text>
         </View>
 
-        <SectionCard title={t('Personal details')}>
-          {isEdit ? (
-            <View style={styles.fieldStack}>
-              <TextField
-                label={t('Name')}
-                value={name}
-                onChangeText={value => setName(sanitizeName(value))}
-                editable
-                autoCapitalize="words"
-                maxLength={NAME_MAX}
-                placeholder={t('Enter your full name')}
-                error={nameError}
-                style={styles.input}
-              />
-              <TextField
-                label={t('Email')}
-                value={email}
-                onChangeText={value => setEmail(sanitizeEmail(value))}
-                editable
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                maxLength={254}
-                placeholder="you@example.com"
-                error={emailError}
-                style={styles.input}
-              />
-              <TextField
-                label={t('Phone')}
-                value={phone}
-                onChangeText={value => setPhone(sanitizePhone(value))}
-                editable
-                keyboardType="phone-pad"
-                maxLength={16}
-                placeholder={t('Enter your phone number')}
-                error={phoneError}
-                style={styles.input}
-              />
-            </View>
-          ) : (
-            <View>
-              <InfoRow label={t('Name')} value={name} />
-              <InfoRow label={t('Email')} value={email} />
-              <InfoRow label={t('Phone')} value={phone} last />
-            </View>
-          )}
-        </SectionCard>
+        {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
+      </View>
 
-        <SectionCard title={t('About you')}>
-          {isEdit ? (
-            <View style={styles.fieldStack}>
-              <TouchableOpacity onPress={() => setShowDobPicker(true)} activeOpacity={0.7}>
-                <View pointerEvents="none">
-                  <TextField
-                    label={t('Date of Birth')}
-                    value={dobLabel}
-                    editable={false}
-                    placeholder={t('Select your date of birth')}
-                    style={styles.input}
-                  />
-                </View>
-              </TouchableOpacity>
-
-              {showDobPicker && (
-                <DateTimePicker
-                  value={dob ?? DOB_PICKER_ANCHOR}
-                  mode="date"
-                  maximumDate={new Date()}
-                  display={Platform.OS === 'android' ? 'default' : 'spinner'}
-                  onChange={onDobChange}
-                />
-              )}
-              {showDobPicker && Platform.OS === 'ios' && (
-                <PrimaryButton
-                  title={t('Done')}
-                  onPress={() => setShowDobPicker(false)}
-                  style={styles.doneButton}
-                />
-              )}
-
-              <View style={styles.fieldWrap}>
-                <Text style={styles.fieldLabel}>{t('Gender')}</Text>
-                <View style={styles.genderRow}>
-                  {GENDER_OPTIONS.map(option => {
-                    const selected = gender === option;
-                    return (
-                      <TouchableOpacity
-                        key={option}
-                        style={[styles.genderChip, selected && styles.genderChipSelected]}
-                        onPress={() => setGender(option)}
-                        activeOpacity={0.7}>
-                        <Text style={[styles.genderChipText, selected && styles.genderChipTextSelected]}>
-                          {t(option)}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            </View>
-          ) : (
-            <View>
-              <InfoRow label={t('Date of Birth')} value={dobLabel} />
-              <InfoRow label={t('Gender')} value={gender ? t(gender) : undefined} last />
-            </View>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title={t('Location')}
-          action={hasCoordinates ? <Text style={styles.cardCount}>{t('Pinned')}</Text> : undefined}>
-          {isEdit ? (
-            <View style={styles.fieldStack}>
-              <TextField
-                label={t('Home / City Address')}
-                value={address}
-                onChangeText={onChangeAddressText}
-                editable
-                maxLength={ADDRESS_MAX}
-                placeholder={t('e.g. Rajajipuram, Lucknow, Uttar Pradesh')}
-                style={styles.input}
-              />
-              {predictions.length > 0 ? (
-                <View style={styles.predictionsList}>
-                  {predictions.map(item => (
-                    <TouchableOpacity
-                      key={item.place_id}
-                      style={styles.predictionRow}
-                      onPress={() => onSelectPrediction(item)}>
-                      <Text style={styles.predictionText} numberOfLines={1}>
-                        {item.description}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              ) : null}
-              <Text style={styles.locationHint}>
-                {t('Pick a suggestion so we can match you with providers nearby.')}
-              </Text>
-            </View>
-          ) : (
-            <Text style={[styles.addressText, !address && styles.infoValueEmpty]}>
-              {address || t('No address added yet.')}
-            </Text>
-          )}
-        </SectionCard>
-
+      <SectionCard title={t('Personal details')}>
         {isEdit ? (
-          <View style={styles.actionRow}>
-            <PrimaryButton
-              title={t('Cancel')}
-              onPress={cancelEditing}
-              style={styles.secondaryButton}
-              textStyle={styles.secondaryButtonText}
+          <View style={styles.fieldStack}>
+            <TextField
+              label={t('Name')}
+              value={name}
+              onChangeText={value => setName(sanitizeName(value))}
+              editable
+              autoCapitalize="words"
+              maxLength={NAME_MAX}
+              placeholder={t('Enter your full name')}
+              error={nameError}
+              style={styles.input}
             />
-            <PrimaryButton title={t('Save Changes')} onPress={handleSave} style={styles.primaryButton} />
+            <TextField
+              label={t('Email')}
+              value={email}
+              onChangeText={value => setEmail(sanitizeEmail(value))}
+              editable
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={254}
+              placeholder="you@example.com"
+              error={emailError}
+              style={styles.input}
+            />
+            <TextField
+              label={t('Phone')}
+              value={phone}
+              onChangeText={value => setPhone(sanitizePhone(value))}
+              editable
+              keyboardType="phone-pad"
+              maxLength={16}
+              placeholder={t('Enter your phone number')}
+              error={phoneError}
+              style={styles.input}
+            />
           </View>
         ) : (
-          <PrimaryButton title={t('Edit Profile')} onPress={startEditing} style={styles.fullButton} />
+          <View>
+            <InfoRow label={t('Name')} value={name} />
+            <InfoRow label={t('Email')} value={email} />
+            <InfoRow label={t('Phone')} value={phone} last />
+          </View>
         )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </SectionCard>
+
+      <SectionCard title={t('About you')}>
+        {isEdit ? (
+          <View style={styles.fieldStack}>
+            <TouchableOpacity onPress={() => setShowDobPicker(true)} activeOpacity={0.7}>
+              <View pointerEvents="none">
+                <TextField
+                  label={t('Date of Birth')}
+                  value={dobLabel}
+                  editable={false}
+                  placeholder={t('Select your date of birth')}
+                  style={styles.input}
+                />
+              </View>
+            </TouchableOpacity>
+
+            {showDobPicker && (
+              <DateTimePicker
+                value={dob ?? DOB_PICKER_ANCHOR}
+                mode="date"
+                maximumDate={new Date()}
+                display={Platform.OS === 'android' ? 'default' : 'spinner'}
+                onChange={onDobChange}
+              />
+            )}
+            {showDobPicker && Platform.OS === 'ios' && (
+              <PrimaryButton
+                title={t('Done')}
+                onPress={() => setShowDobPicker(false)}
+                style={styles.doneButton}
+              />
+            )}
+
+            <View style={styles.fieldWrap}>
+              <Text style={styles.fieldLabel}>{t('Gender')}</Text>
+              <View style={styles.genderRow}>
+                {GENDER_OPTIONS.map(option => {
+                  const selected = gender === option;
+                  return (
+                    <TouchableOpacity
+                      key={option}
+                      style={[styles.genderChip, selected && styles.genderChipSelected]}
+                      onPress={() => setGender(option)}
+                      activeOpacity={0.7}>
+                      <Text style={[styles.genderChipText, selected && styles.genderChipTextSelected]}>
+                        {t(option)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View>
+            <InfoRow label={t('Date of Birth')} value={dobLabel} />
+            <InfoRow label={t('Gender')} value={gender ? t(gender) : undefined} last />
+          </View>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title={t('Location')}
+        action={hasCoordinates ? <Text style={styles.cardCount}>{t('Pinned')}</Text> : undefined}>
+        {isEdit ? (
+          <View style={styles.fieldStack}>
+            <TextField
+              label={t('Home / City Address')}
+              value={address}
+              onChangeText={onChangeAddressText}
+              editable
+              maxLength={ADDRESS_MAX}
+              placeholder={t('e.g. Rajajipuram, Lucknow, Uttar Pradesh')}
+              style={styles.input}
+            />
+            {predictions.length > 0 ? (
+              <View style={styles.predictionsList}>
+                {predictions.map(item => (
+                  <TouchableOpacity
+                    key={item.place_id}
+                    style={styles.predictionRow}
+                    onPress={() => onSelectPrediction(item)}>
+                    <Text style={styles.predictionText} numberOfLines={1}>
+                      {item.description}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
+            <Text style={styles.locationHint}>
+              {t('Pick a suggestion so we can match you with providers nearby.')}
+            </Text>
+          </View>
+        ) : (
+          <Text style={[styles.addressText, !address && styles.infoValueEmpty]}>
+            {address || t('No address added yet.')}
+          </Text>
+        )}
+      </SectionCard>
+
+      {isEdit ? (
+        <View style={styles.actionRow}>
+          <PrimaryButton
+            title={t('Cancel')}
+            onPress={cancelEditing}
+            style={styles.secondaryButton}
+            textStyle={styles.secondaryButtonText}
+          />
+          <PrimaryButton title={t('Save Changes')} onPress={handleSave} style={styles.primaryButton} />
+        </View>
+      ) : (
+        <PrimaryButton title={t('Edit Profile')} onPress={startEditing} style={styles.fullButton} />
+      )}
+    </KeyboardAwareScrollView>
   );
 }
 

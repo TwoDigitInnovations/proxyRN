@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Image, Platform, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -442,7 +443,7 @@ export default function MyServiceProvider() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.formHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setViewMode('list')}>
           <Text style={styles.backBtnText}>{t('← Back to List')}</Text>
@@ -567,7 +568,7 @@ export default function MyServiceProvider() {
       <TouchableOpacity style={styles.cancelBtn} onPress={() => setViewMode('list')}>
         <Text style={styles.cancelBtnText}>{t('Cancel')}</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

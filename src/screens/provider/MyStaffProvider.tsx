@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -364,7 +365,7 @@ export default function MyStaffProvider() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
+    <KeyboardAwareScrollView contentContainerStyle={styles.scroll}>
       <View style={styles.formHeader}>
         <TouchableOpacity style={styles.backBtn} onPress={() => setViewMode('list')}>
           <Text style={styles.backBtnText}>{t('← Back to List')}</Text>
@@ -495,7 +496,7 @@ export default function MyStaffProvider() {
       <TouchableOpacity style={styles.cancelBtn} onPress={() => setViewMode('list')}>
         <Text style={styles.cancelBtnText}>{t('Cancel')}</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

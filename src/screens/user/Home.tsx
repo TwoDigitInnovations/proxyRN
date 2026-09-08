@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
-  KeyboardAvoidingView,
   Linking,
   Modal,
   Platform,
@@ -15,6 +14,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import MapView, { Marker, Polyline, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import moment from 'moment';
@@ -1048,13 +1048,9 @@ export default function Home() {
 
       {/* Payment / Visitor Details Modal */}
       <Modal visible={showPaymentModal} animationType="slide" transparent onRequestClose={() => setShowPaymentModal(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-          <ScrollView
+        <View style={styles.modalOverlay}>
+          <KeyboardAwareScrollView
             style={styles.sheetScroll}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.sheet, { paddingBottom: 240 + insets.bottom }]}>
             <View style={styles.sheetHandle} />
@@ -1327,8 +1323,8 @@ export default function Home() {
                 </TouchableOpacity>
               </>
             )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+        </View>
       </Modal>
     </View>
   );

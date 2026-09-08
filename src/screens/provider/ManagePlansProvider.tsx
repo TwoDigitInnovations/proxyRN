@@ -2,14 +2,13 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -544,13 +543,9 @@ export default function ManagePlansProvider() {
         animationType="slide"
         transparent
         onRequestClose={closeCheckout}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-          <ScrollView
+        <View style={styles.modalOverlay}>
+          <KeyboardAwareScrollView
             style={styles.sheetScroll}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={[styles.sheet, { paddingBottom: 200 + insets.bottom }]}>
             <View style={styles.sheetHandle} />
@@ -743,8 +738,8 @@ export default function ManagePlansProvider() {
             <TouchableOpacity onPress={closeCheckout}>
               <Text style={styles.sheetCancel}>{t('Cancel')}</Text>
             </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          </KeyboardAwareScrollView>
+        </View>
       </Modal>
     </View>
   );

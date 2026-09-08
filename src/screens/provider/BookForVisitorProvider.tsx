@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
@@ -333,350 +331,345 @@ export default function BookForVisitorProvider() {
   }
 
   return (
-    <KeyboardAvoidingView
+    <KeyboardAwareScrollView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        {!entitlements.canWrite ? (
-          <PlanStatusNotice entitlements={entitlements} style={styles.notice} />
-        ) : null}
-        {!can('appointments.book') ? (
-          <View style={styles.errorCard}>
-            <Icon name="lock" size={18} color="#B91C1C" />
-            <Text style={styles.errorCardText}>
-              {t('Your provider has not given you access to this feature')}
-            </Text>
-          </View>
-        ) : null}
+      contentContainerStyle={styles.scroll}
+      showsVerticalScrollIndicator={false}>
+      {!entitlements.canWrite ? (
+        <PlanStatusNotice entitlements={entitlements} style={styles.notice} />
+      ) : null}
+      {!can('appointments.book') ? (
+        <View style={styles.errorCard}>
+          <Icon name="lock" size={18} color="#B91C1C" />
+          <Text style={styles.errorCardText}>
+            {t('Your provider has not given you access to this feature')}
+          </Text>
+        </View>
+      ) : null}
 
-        <Text style={styles.lead}>
-          {t('Raise a queue ticket for a visitor at your counter. They do not need the app.')}
-        </Text>
+      <Text style={styles.lead}>
+        {t('Raise a queue ticket for a visitor at your counter. They do not need the app.')}
+      </Text>
 
-        {/* 1. Which queue */}
-        <Text style={styles.stepTitle}>{t('1. Service')}</Text>
-        <View style={styles.serviceList}>
-          {services.map(item => {
-            const active = item._id === serviceId;
-            return (
-              <TouchableOpacity
-                key={item._id}
-                activeOpacity={0.85}
-                style={[styles.serviceCard, active && styles.serviceCardActive]}
-                onPress={() => onSelectService(item._id)}>
-                <View style={styles.serviceTextWrap}>
-                  <Text style={[styles.serviceName, active && styles.serviceNameActive]} numberOfLines={1}>
-                    {item.service_name}
+      {/* 1. Which queue */}
+      <Text style={styles.stepTitle}>{t('1. Service')}</Text>
+      <View style={styles.serviceList}>
+        {services.map(item => {
+          const active = item._id === serviceId;
+          return (
+            <TouchableOpacity
+              key={item._id}
+              activeOpacity={0.85}
+              style={[styles.serviceCard, active && styles.serviceCardActive]}
+              onPress={() => onSelectService(item._id)}>
+              <View style={styles.serviceTextWrap}>
+                <Text style={[styles.serviceName, active && styles.serviceNameActive]} numberOfLines={1}>
+                  {item.service_name}
+                </Text>
+                {item.address ? (
+                  <Text style={styles.serviceAddress} numberOfLines={1}>
+                    {item.address}
                   </Text>
-                  {item.address ? (
-                    <Text style={styles.serviceAddress} numberOfLines={1}>
-                      {item.address}
-                    </Text>
-                  ) : null}
-                </View>
-                <View style={styles.serviceMeta}>
-                  <Text style={styles.serviceMetaValue}>{item.waitingCount ?? 0}</Text>
-                  <Text style={styles.serviceMetaLabel}>{t('Waiting')}</Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+                ) : null}
+              </View>
+              <View style={styles.serviceMeta}>
+                <Text style={styles.serviceMetaValue}>{item.waitingCount ?? 0}</Text>
+                <Text style={styles.serviceMetaLabel}>{t('Waiting')}</Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-        {/* 2. When */}
-        <Text style={styles.stepTitle}>{t('2. Date & time slot')}</Text>
+      {/* 2. When */}
+      <Text style={styles.stepTitle}>{t('2. Date & time slot')}</Text>
+      <View style={styles.chipRow}>
+        {bookingDates.map(item => {
+          const active = item.date === selectedDate;
+          return (
+            <TouchableOpacity
+              key={item.date}
+              style={[styles.dateChip, active && styles.dateChipActive]}
+              onPress={() => onSelectDate(item.date)}>
+              <Text style={[styles.dateChipWeekday, active && styles.dateChipTextActive]}>
+                {item.isToday ? t('Today') : item.weekday}
+              </Text>
+              <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {slotsLoading ? <ActivityIndicator style={styles.slotLoader} color={colors.primary} /> : null}
+      <View style={styles.chipRow}>
+        {timeSlots.map(slot => {
+          const active = slot.time === selectedTime;
+          const disabled = !slot.isAvailable;
+          return (
+            <TouchableOpacity
+              key={slot.time}
+              disabled={disabled}
+              style={[styles.slotChip, active && styles.slotChipActive, disabled && styles.slotChipDisabled]}
+              onPress={() => {
+                setSelectedTime(slot.time);
+                setFormError(null);
+              }}>
+              <Text
+                style={[
+                  styles.slotChipText,
+                  active && styles.dateChipTextActive,
+                  disabled && styles.slotChipTextDisabled,
+                ]}>
+                {slot.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {!serviceId ? (
+        <Text style={styles.hint}>{t('Pick a service to see its time slots.')}</Text>
+      ) : !slotsLoading && timeSlots.length === 0 ? (
+        <Text style={styles.hint}>{t('This agency has not opened any time slots yet.')}</Text>
+      ) : !slotsLoading && timeSlots.every(slot => !slot.isAvailable) ? (
+        <Text style={styles.hint}>{t('No slots left for this day. Please pick another date.')}</Text>
+      ) : (
+        <Text style={styles.hint}>{t('Each slot is for one visitor only.')}</Text>
+      )}
+
+      {/* 3. Who */}
+      <Text style={styles.stepTitle}>{t('3. Visitor details')}</Text>
+      <Text style={styles.hint}>
+        {t('If the email matches an existing account, the ticket also shows up in their app.')}
+      </Text>
+      <TextField
+        label={t('Full Name')}
+        value={name}
+        onChangeText={value => setName(sanitizeName(value))}
+        autoCapitalize="words"
+        maxLength={NAME_MAX}
+        placeholder={t('Enter full name')}
+        error={nameError}
+      />
+      <TextField
+        label={t('Email Address')}
+        value={email}
+        onChangeText={value => setEmail(sanitizeEmail(value))}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoCorrect={false}
+        maxLength={254}
+        placeholder="visitor@example.com"
+        error={emailError}
+      />
+      <TextField
+        label={t('Phone Number')}
+        value={phone}
+        onChangeText={value => setPhone(sanitizePhone(value))}
+        keyboardType="phone-pad"
+        maxLength={16}
+        placeholder="+228 90 00 00 00"
+        error={phoneError}
+      />
+
+      <View style={styles.fieldGroup}>
+        <Text style={styles.fieldLabel}>{t('Gender')}</Text>
         <View style={styles.chipRow}>
-          {bookingDates.map(item => {
-            const active = item.date === selectedDate;
+          {GENDER_OPTIONS.map(option => {
+            const active = gender.toLowerCase() === option.toLowerCase();
             return (
               <TouchableOpacity
-                key={item.date}
+                key={option}
                 style={[styles.dateChip, active && styles.dateChipActive]}
-                onPress={() => onSelectDate(item.date)}>
-                <Text style={[styles.dateChipWeekday, active && styles.dateChipTextActive]}>
-                  {item.isToday ? t('Today') : item.weekday}
-                </Text>
+                onPress={() => setGender(option)}>
                 <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>
-                  {item.label}
+                  {t(option)}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
+        {genderError ? <Text style={styles.inlineError}>{genderError}</Text> : null}
+      </View>
 
-        {slotsLoading ? <ActivityIndicator style={styles.slotLoader} color={colors.primary} /> : null}
+      <View style={styles.fieldGroup}>
+        <Text style={styles.fieldLabel}>{t('Purpose of Visit')}</Text>
         <View style={styles.chipRow}>
-          {timeSlots.map(slot => {
-            const active = slot.time === selectedTime;
-            const disabled = !slot.isAvailable;
+          {PURPOSE_SUGGESTIONS.map(item => {
+            const active = purpose === item;
             return (
               <TouchableOpacity
-                key={slot.time}
-                disabled={disabled}
-                style={[styles.slotChip, active && styles.slotChipActive, disabled && styles.slotChipDisabled]}
-                onPress={() => {
-                  setSelectedTime(slot.time);
-                  setFormError(null);
-                }}>
-                <Text
-                  style={[
-                    styles.slotChipText,
-                    active && styles.dateChipTextActive,
-                    disabled && styles.slotChipTextDisabled,
-                  ]}>
-                  {slot.label}
-                </Text>
+                key={item}
+                style={[styles.dateChip, active && styles.dateChipActive]}
+                onPress={() => setPurpose(item)}>
+                <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{t(item)}</Text>
               </TouchableOpacity>
             );
           })}
         </View>
-        {!serviceId ? (
-          <Text style={styles.hint}>{t('Pick a service to see its time slots.')}</Text>
-        ) : !slotsLoading && timeSlots.length === 0 ? (
-          <Text style={styles.hint}>{t('This agency has not opened any time slots yet.')}</Text>
-        ) : !slotsLoading && timeSlots.every(slot => !slot.isAvailable) ? (
-          <Text style={styles.hint}>{t('No slots left for this day. Please pick another date.')}</Text>
-        ) : (
-          <Text style={styles.hint}>{t('Each slot is for one visitor only.')}</Text>
-        )}
-
-        {/* 3. Who */}
-        <Text style={styles.stepTitle}>{t('3. Visitor details')}</Text>
-        <Text style={styles.hint}>
-          {t('If the email matches an existing account, the ticket also shows up in their app.')}
-        </Text>
         <TextField
-          label={t('Full Name')}
-          value={name}
-          onChangeText={value => setName(sanitizeName(value))}
-          autoCapitalize="words"
-          maxLength={NAME_MAX}
-          placeholder={t('Enter full name')}
-          error={nameError}
+          label=""
+          value={purpose}
+          onChangeText={value => setPurpose(sanitizeText(value, PURPOSE_MAX))}
+          maxLength={PURPOSE_MAX}
+          placeholder={t('Describe purpose of visit...')}
+          error={purposeError}
         />
+      </View>
+
+      {/* 4. How it is paid */}
+      <Text style={styles.stepTitle}>{t('4. Payment')}</Text>
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>{t('Queue Ticket Fee')}</Text>
+          <Text style={styles.summaryVal}>$5.00</Text>
+        </View>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>{t('Service & Platform Fee')}</Text>
+          <Text style={styles.summaryVal}>$0.50</Text>
+        </View>
+        <View style={[styles.summaryRow, styles.summaryTotalRow]}>
+          <Text style={styles.summaryTotalLabel}>{t('Total Amount Due')}</Text>
+          <Text style={styles.summaryTotalVal}>${TICKET_FEE.toFixed(2)}</Text>
+        </View>
+      </View>
+
+      <View style={styles.methodsGrid}>
+        {METHODS.map(item => {
+          const active = method === item.key;
+          return (
+            <TouchableOpacity
+              key={item.key}
+              activeOpacity={0.8}
+              style={[
+                styles.methodCard,
+                active && { borderColor: item.color, backgroundColor: item.bg },
+              ]}
+              onPress={() => {
+                setFormError(null);
+                setMethod(item.key);
+              }}>
+              <Icon name={item.iconName} size={18} color={active ? item.color : colors.gray} />
+              <Text style={[styles.methodLabel, active && { color: item.color, fontWeight: '700' }]}>
+                {item.key === COUNTER_PAYMENT_METHOD ? t(COUNTER_PAYMENT_METHOD) : item.key}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {method === COUNTER_PAYMENT_METHOD ? (
+        <View style={styles.counterNote}>
+          <Icon name="dollar" size={16} color="#15803D" />
+          <Text style={styles.counterNoteText}>
+            {t('The ticket is issued straight away and left unpaid. Collect ${{amount}} at the counter.', {
+              amount: TICKET_FEE.toFixed(2),
+            })}
+          </Text>
+        </View>
+      ) : null}
+
+      {method === 'Orange Money' ? (
         <TextField
-          label={t('Email Address')}
-          value={email}
-          onChangeText={value => setEmail(sanitizeEmail(value))}
+          label={t('Orange Money Account / Mobile No.')}
+          value={accountNumber}
+          onChangeText={value => {
+            setFormError(null);
+            setAccountNumber(sanitizePhone(value));
+          }}
+          keyboardType="phone-pad"
+          maxLength={16}
+          placeholder="+225 0700000000"
+          error={accountNumberError}
+        />
+      ) : null}
+
+      {method === 'PayPal' ? (
+        <TextField
+          label={t('PayPal Email Address')}
+          value={paypalEmail}
+          onChangeText={value => {
+            setFormError(null);
+            setPaypalEmail(sanitizeEmail(value));
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
           autoCorrect={false}
           maxLength={254}
-          placeholder="visitor@example.com"
-          error={emailError}
+          placeholder="user@paypal.com"
+          error={paypalEmailError}
         />
-        <TextField
-          label={t('Phone Number')}
-          value={phone}
-          onChangeText={value => setPhone(sanitizePhone(value))}
-          keyboardType="phone-pad"
-          maxLength={16}
-          placeholder="+228 90 00 00 00"
-          error={phoneError}
-        />
+      ) : null}
 
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>{t('Gender')}</Text>
-          <View style={styles.chipRow}>
-            {GENDER_OPTIONS.map(option => {
-              const active = gender.toLowerCase() === option.toLowerCase();
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[styles.dateChip, active && styles.dateChipActive]}
-                  onPress={() => setGender(option)}>
-                  <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>
-                    {t(option)}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {genderError ? <Text style={styles.inlineError}>{genderError}</Text> : null}
-        </View>
-
-        <View style={styles.fieldGroup}>
-          <Text style={styles.fieldLabel}>{t('Purpose of Visit')}</Text>
-          <View style={styles.chipRow}>
-            {PURPOSE_SUGGESTIONS.map(item => {
-              const active = purpose === item;
-              return (
-                <TouchableOpacity
-                  key={item}
-                  style={[styles.dateChip, active && styles.dateChipActive]}
-                  onPress={() => setPurpose(item)}>
-                  <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{t(item)}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+      {method === 'Credit Card' || method === 'Stripe' ? (
+        <>
           <TextField
-            label=""
-            value={purpose}
-            onChangeText={value => setPurpose(sanitizeText(value, PURPOSE_MAX))}
-            maxLength={PURPOSE_MAX}
-            placeholder={t('Describe purpose of visit...')}
-            error={purposeError}
+            label={t('Card Number')}
+            value={cardNumber}
+            onChangeText={value => {
+              setFormError(null);
+              setCardNumber(sanitizeCardNumber(value));
+            }}
+            keyboardType="number-pad"
+            // 16 digits + the 3 grouping spaces.
+            maxLength={CARD_NUMBER_DIGITS + 3}
+            placeholder="4111 2222 3333 4444"
+            error={cardNumberError}
           />
-        </View>
-
-        {/* 4. How it is paid */}
-        <Text style={styles.stepTitle}>{t('4. Payment')}</Text>
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t('Queue Ticket Fee')}</Text>
-            <Text style={styles.summaryVal}>$5.00</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>{t('Service & Platform Fee')}</Text>
-            <Text style={styles.summaryVal}>$0.50</Text>
-          </View>
-          <View style={[styles.summaryRow, styles.summaryTotalRow]}>
-            <Text style={styles.summaryTotalLabel}>{t('Total Amount Due')}</Text>
-            <Text style={styles.summaryTotalVal}>${TICKET_FEE.toFixed(2)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.methodsGrid}>
-          {METHODS.map(item => {
-            const active = method === item.key;
-            return (
-              <TouchableOpacity
-                key={item.key}
-                activeOpacity={0.8}
-                style={[
-                  styles.methodCard,
-                  active && { borderColor: item.color, backgroundColor: item.bg },
-                ]}
-                onPress={() => {
+          <View style={styles.cardInline}>
+            <View style={styles.cardFlex}>
+              <TextField
+                label={t('Expiry (MM/YY)')}
+                value={cardExpiry}
+                onChangeText={value => {
                   setFormError(null);
-                  setMethod(item.key);
-                }}>
-                <Icon name={item.iconName} size={18} color={active ? item.color : colors.gray} />
-                <Text style={[styles.methodLabel, active && { color: item.color, fontWeight: '700' }]}>
-                  {item.key === COUNTER_PAYMENT_METHOD ? t(COUNTER_PAYMENT_METHOD) : item.key}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {method === COUNTER_PAYMENT_METHOD ? (
-          <View style={styles.counterNote}>
-            <Icon name="dollar" size={16} color="#15803D" />
-            <Text style={styles.counterNoteText}>
-              {t('The ticket is issued straight away and left unpaid. Collect ${{amount}} at the counter.', {
-                amount: TICKET_FEE.toFixed(2),
-              })}
-            </Text>
-          </View>
-        ) : null}
-
-        {method === 'Orange Money' ? (
-          <TextField
-            label={t('Orange Money Account / Mobile No.')}
-            value={accountNumber}
-            onChangeText={value => {
-              setFormError(null);
-              setAccountNumber(sanitizePhone(value));
-            }}
-            keyboardType="phone-pad"
-            maxLength={16}
-            placeholder="+225 0700000000"
-            error={accountNumberError}
-          />
-        ) : null}
-
-        {method === 'PayPal' ? (
-          <TextField
-            label={t('PayPal Email Address')}
-            value={paypalEmail}
-            onChangeText={value => {
-              setFormError(null);
-              setPaypalEmail(sanitizeEmail(value));
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={254}
-            placeholder="user@paypal.com"
-            error={paypalEmailError}
-          />
-        ) : null}
-
-        {method === 'Credit Card' || method === 'Stripe' ? (
-          <>
-            <TextField
-              label={t('Card Number')}
-              value={cardNumber}
-              onChangeText={value => {
-                setFormError(null);
-                setCardNumber(sanitizeCardNumber(value));
-              }}
-              keyboardType="number-pad"
-              // 16 digits + the 3 grouping spaces.
-              maxLength={CARD_NUMBER_DIGITS + 3}
-              placeholder="4111 2222 3333 4444"
-              error={cardNumberError}
-            />
-            <View style={styles.cardInline}>
-              <View style={styles.cardFlex}>
-                <TextField
-                  label={t('Expiry (MM/YY)')}
-                  value={cardExpiry}
-                  onChangeText={value => {
-                    setFormError(null);
-                    setCardExpiry(sanitizeExpiry(value));
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={5}
-                  placeholder="12/28"
-                  error={cardExpiryError}
-                />
-              </View>
-              <View style={styles.cardFlex}>
-                <TextField
-                  label={t('CVV')}
-                  value={cardCvv}
-                  onChangeText={value => {
-                    setFormError(null);
-                    setCardCvv(sanitizeCvv(value));
-                  }}
-                  keyboardType="number-pad"
-                  maxLength={CVV_MAX}
-                  secureTextEntry
-                  showPasswordToggle={false}
-                  placeholder="123"
-                  error={cardCvvError}
-                />
-              </View>
+                  setCardExpiry(sanitizeExpiry(value));
+                }}
+                keyboardType="number-pad"
+                maxLength={5}
+                placeholder="12/28"
+                error={cardExpiryError}
+              />
             </View>
-          </>
-        ) : null}
-
-        {formError ? (
-          <View style={styles.errorCard}>
-            <Icon name="alert-triangle" size={18} color="#DC2626" />
-            <Text style={styles.errorCardText}>{formError}</Text>
+            <View style={styles.cardFlex}>
+              <TextField
+                label={t('CVV')}
+                value={cardCvv}
+                onChangeText={value => {
+                  setFormError(null);
+                  setCardCvv(sanitizeCvv(value));
+                }}
+                keyboardType="number-pad"
+                maxLength={CVV_MAX}
+                secureTextEntry
+                showPasswordToggle={false}
+                placeholder="123"
+                error={cardCvvError}
+              />
+            </View>
           </View>
-        ) : null}
+        </>
+      ) : null}
 
-        <PrimaryButton
-          title={
-            method === COUNTER_PAYMENT_METHOD
-              ? t('Issue Ticket (Pay on Counter)')
-              : t('Confirm & Pay (${{amount}})', { amount: TICKET_FEE.toFixed(2) })
-          }
-          onPress={onSubmit}
-          disabled={!canBook}
-          style={styles.submit}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {formError ? (
+        <View style={styles.errorCard}>
+          <Icon name="alert-triangle" size={18} color="#DC2626" />
+          <Text style={styles.errorCardText}>{formError}</Text>
+        </View>
+      ) : null}
+
+      <PrimaryButton
+        title={
+          method === COUNTER_PAYMENT_METHOD
+            ? t('Issue Ticket (Pay on Counter)')
+            : t('Confirm & Pay (${{amount}})', { amount: TICKET_FEE.toFixed(2) })
+        }
+        onPress={onSubmit}
+        disabled={!canBook}
+        style={styles.submit}
+      />
+    </KeyboardAwareScrollView>
   );
 }
 

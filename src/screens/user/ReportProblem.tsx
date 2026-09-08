@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import {
   Alert,
-  ScrollView,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
@@ -73,7 +73,7 @@ export default function ReportProblem() {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+    <KeyboardAwareScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <Text style={styles.heading}>{t('Describe Your Problem')}</Text>
       <Text style={styles.subHeading}>
         {t('Please select a category and fill in the details below so our support team can assist you.')}
@@ -135,7 +135,7 @@ export default function ReportProblem() {
           {isSubmitting ? t('Submitting Report...') : t('Submit Report')}
         </Text>
       </TouchableOpacity>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 

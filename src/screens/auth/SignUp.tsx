@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -115,126 +116,124 @@ export default function SignUp({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <View style={styles.welcomeBlock}>
-            <Text style={styles.welcomeText}>{t('Welcome')}</Text>
-            <Text style={styles.subText}>{t('Please enter your sign up details.')}</Text>
-          </View>
+      <KeyboardAwareScrollView style={styles.flex} contentContainerStyle={styles.scroll}>
+        <View style={styles.welcomeBlock}>
+          <Text style={styles.welcomeText}>{t('Welcome')}</Text>
+          <Text style={styles.subText}>{t('Please enter your sign up details.')}</Text>
+        </View>
 
-          <View style={styles.roleRow}>
-            <PrimaryButton
-              title={t('User')}
-              onPress={() => setRole('user')}
-              style={[styles.roleButton, role !== 'user' && styles.roleButtonInactive]}
-              textStyle={role !== 'user' ? styles.roleButtonTextInactive : undefined}
-            />
-            <PrimaryButton
-              title={t('Provider')}
-              onPress={() => setRole('provider')}
-              style={[styles.roleButton, role !== 'provider' && styles.roleButtonInactive]}
-              textStyle={role !== 'provider' ? styles.roleButtonTextInactive : undefined}
-            />
-          </View>
-
-          <TextField
-            label={t('Name')}
-            placeholder={t('Enter Name')}
-            value={fullName}
-            onChangeText={value => setFullName(sanitizeName(value))}
-            autoCapitalize="words"
-            maxLength={NAME_MAX}
-            error={nameError}
-          />
-          <TextField
-            label={t('Email')}
-            placeholder={t('Enter email')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={254}
-            value={email}
-            onChangeText={value => setEmail(sanitizeEmail(value))}
-            error={emailError}
-          />
-          <TextField
-            label={t('Mobile Number')}
-            placeholder={t('Enter Mobile Number')}
-            keyboardType="phone-pad"
-            maxLength={16}
-            value={phoneNumber}
-            onChangeText={value => setPhoneNumber(sanitizePhone(value))}
-            error={phoneError}
-          />
-          <TextField
-            label={t('Password')}
-            placeholder="**************"
-            secureTextEntry
-            maxLength={64}
-            value={password}
-            onChangeText={value => setPassword(sanitizePassword(value))}
-            error={passwordError}
-          />
-
-          {/* Provider Verification Document Upload Section */}
-          {role === 'provider' && (
-            <View style={styles.docSection}>
-              <Text style={styles.docSectionTitle}>{t('Identity Verification Document *')}</Text>
-              <Text style={styles.docSectionSub}>
-                {t('Upload ID card, passport, or business license for Admin review.')}
-              </Text>
-
-              {docAsset?.uri ? (
-                <View style={styles.docPreviewCard}>
-                  <Image source={{ uri: docAsset.uri }} style={styles.docImageThumb} />
-                  <View style={styles.docInfoWrap}>
-                    <Text style={styles.docFileName} numberOfLines={1}>
-                      {docAsset.fileName || 'Verification_Document.jpg'}
-                    </Text>
-                    <Text style={styles.docFileSize}>{t('Ready for verification')}</Text>
-                  </View>
-                  <TouchableOpacity style={styles.docRemoveBtn} onPress={() => setDocAsset(null)}>
-                    <Icon name="trash" size={18} color="#DC2626" />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity style={styles.uploadBox} onPress={handlePickDocument} activeOpacity={0.8}>
-                  <View style={styles.uploadIconCircle}>
-                    <Icon name="file-text" size={24} color={colors.primaryAlt} />
-                  </View>
-                  <Text style={styles.uploadTitle}>{t('Attach ID Document / License')}</Text>
-                  <Text style={styles.uploadSub}>{t('Tap to take a photo or browse your gallery')}</Text>
-                </TouchableOpacity>
-              )}
-
-              {docError ? <Text style={styles.errorText}>{docError}</Text> : null}
-            </View>
-          )}
-
-          <Text style={styles.termsText}>
-            {t('By clicking Sign up, you agree with our')}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('TermsAndConditions')}>
-              {t('Terms and Conditions')}{' '}
-            </Text>
-            {t('and')}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
-              {t('Privacy Policy')}
-            </Text>
-          </Text>
-
+        <View style={styles.roleRow}>
           <PrimaryButton
-            title={role === 'provider' ? t('Submit for Verification') : t('Sign Up')}
-            onPress={handleSignUp}
+            title={t('User')}
+            onPress={() => setRole('user')}
+            style={[styles.roleButton, role !== 'user' && styles.roleButtonInactive]}
+            textStyle={role !== 'user' ? styles.roleButtonTextInactive : undefined}
           />
+          <PrimaryButton
+            title={t('Provider')}
+            onPress={() => setRole('provider')}
+            style={[styles.roleButton, role !== 'provider' && styles.roleButtonInactive]}
+            textStyle={role !== 'provider' ? styles.roleButtonTextInactive : undefined}
+          />
+        </View>
 
-          <Text style={styles.accountText}>
-            {t('Already have an account?')}{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('SignIn')}>
-              {t('Sign in')}
+        <TextField
+          label={t('Name')}
+          placeholder={t('Enter Name')}
+          value={fullName}
+          onChangeText={value => setFullName(sanitizeName(value))}
+          autoCapitalize="words"
+          maxLength={NAME_MAX}
+          error={nameError}
+        />
+        <TextField
+          label={t('Email')}
+          placeholder={t('Enter email')}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={254}
+          value={email}
+          onChangeText={value => setEmail(sanitizeEmail(value))}
+          error={emailError}
+        />
+        <TextField
+          label={t('Mobile Number')}
+          placeholder={t('Enter Mobile Number')}
+          keyboardType="phone-pad"
+          maxLength={16}
+          value={phoneNumber}
+          onChangeText={value => setPhoneNumber(sanitizePhone(value))}
+          error={phoneError}
+        />
+        <TextField
+          label={t('Password')}
+          placeholder="**************"
+          secureTextEntry
+          maxLength={64}
+          value={password}
+          onChangeText={value => setPassword(sanitizePassword(value))}
+          error={passwordError}
+        />
+
+        {/* Provider Verification Document Upload Section */}
+        {role === 'provider' && (
+          <View style={styles.docSection}>
+            <Text style={styles.docSectionTitle}>{t('Identity Verification Document *')}</Text>
+            <Text style={styles.docSectionSub}>
+              {t('Upload ID card, passport, or business license for Admin review.')}
             </Text>
+
+            {docAsset?.uri ? (
+              <View style={styles.docPreviewCard}>
+                <Image source={{ uri: docAsset.uri }} style={styles.docImageThumb} />
+                <View style={styles.docInfoWrap}>
+                  <Text style={styles.docFileName} numberOfLines={1}>
+                    {docAsset.fileName || 'Verification_Document.jpg'}
+                  </Text>
+                  <Text style={styles.docFileSize}>{t('Ready for verification')}</Text>
+                </View>
+                <TouchableOpacity style={styles.docRemoveBtn} onPress={() => setDocAsset(null)}>
+                  <Icon name="trash" size={18} color="#DC2626" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.uploadBox} onPress={handlePickDocument} activeOpacity={0.8}>
+                <View style={styles.uploadIconCircle}>
+                  <Icon name="file-text" size={24} color={colors.primaryAlt} />
+                </View>
+                <Text style={styles.uploadTitle}>{t('Attach ID Document / License')}</Text>
+                <Text style={styles.uploadSub}>{t('Tap to take a photo or browse your gallery')}</Text>
+              </TouchableOpacity>
+            )}
+
+            {docError ? <Text style={styles.errorText}>{docError}</Text> : null}
+          </View>
+        )}
+
+        <Text style={styles.termsText}>
+          {t('By clicking Sign up, you agree with our')}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('TermsAndConditions')}>
+            {t('Terms and Conditions')}{' '}
           </Text>
-        </ScrollView>
-      </KeyboardAvoidingView>
+          {t('and')}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('PrivacyPolicy')}>
+            {t('Privacy Policy')}
+          </Text>
+        </Text>
+
+        <PrimaryButton
+          title={role === 'provider' ? t('Submit for Verification') : t('Sign Up')}
+          onPress={handleSignUp}
+        />
+
+        <Text style={styles.accountText}>
+          {t('Already have an account?')}{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('SignIn')}>
+            {t('Sign in')}
+          </Text>
+        </Text>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

@@ -2,13 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { useTranslation } from 'react-i18next';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
@@ -198,208 +196,205 @@ export default function ProfileProvider() {
   const canAddDocuments = documentCount < MAX_DOCUMENTS;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        style={styles.flex}
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View style={styles.hero}>
-          <TouchableOpacity
-            onPress={isEdit ? handlePickPhoto : undefined}
-            activeOpacity={isEdit ? 0.8 : 1}
-            style={styles.avatarWrap}>
-            <View style={styles.avatarRing}>
-              {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <Text style={styles.avatarInitial}>{(name || 'P').charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-            </View>
-            {isEdit ? (
-              <View style={styles.cameraBadge}>
-                <Text style={styles.cameraBadgeIcon}>✎</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
-
-          <Text style={styles.heroName} numberOfLines={1}>
-            {name || t('Your profile')}
-          </Text>
-          {email ? (
-            <Text style={styles.heroEmail} numberOfLines={1}>
-              {email}
-            </Text>
-          ) : null}
-
-          <View style={styles.heroBadgeRow}>
-            <View style={styles.heroBadge}>
-              <Text style={styles.heroBadgeText}>
-                {isStaff ? t('Staff Account') : t('Service Provider')}
-              </Text>
-            </View>
-            {isStaff ? null : (
-              <View style={[styles.planBadge, plan?.isSubscribed ? styles.planBadgePaid : styles.planBadgeFree]}>
-                <Icon name="crown" size={12} color={plan?.isSubscribed ? '#B45309' : colors.grayAlt} />
-                <Text
-                  style={[styles.planBadgeText, plan?.isSubscribed && styles.planBadgeTextPaid]}>
-                  {plan?.isSubscribed ? plan.planLabel : t('Free')}
-                </Text>
+    <KeyboardAwareScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.scroll}
+      showsVerticalScrollIndicator={false}>
+      <View style={styles.hero}>
+        <TouchableOpacity
+          onPress={isEdit ? handlePickPhoto : undefined}
+          activeOpacity={isEdit ? 0.8 : 1}
+          style={styles.avatarWrap}>
+          <View style={styles.avatarRing}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Text style={styles.avatarInitial}>{(name || 'P').charAt(0).toUpperCase()}</Text>
               </View>
             )}
           </View>
+          {isEdit ? (
+            <View style={styles.cameraBadge}>
+              <Text style={styles.cameraBadgeIcon}>✎</Text>
+            </View>
+          ) : null}
+        </TouchableOpacity>
 
-          {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
+        <Text style={styles.heroName} numberOfLines={1}>
+          {name || t('Your profile')}
+        </Text>
+        {email ? (
+          <Text style={styles.heroEmail} numberOfLines={1}>
+            {email}
+          </Text>
+        ) : null}
+
+        <View style={styles.heroBadgeRow}>
+          <View style={styles.heroBadge}>
+            <Text style={styles.heroBadgeText}>
+              {isStaff ? t('Staff Account') : t('Service Provider')}
+            </Text>
+          </View>
+          {isStaff ? null : (
+            <View style={[styles.planBadge, plan?.isSubscribed ? styles.planBadgePaid : styles.planBadgeFree]}>
+              <Icon name="crown" size={12} color={plan?.isSubscribed ? '#B45309' : colors.grayAlt} />
+              <Text
+                style={[styles.planBadgeText, plan?.isSubscribed && styles.planBadgeTextPaid]}>
+                {plan?.isSubscribed ? plan.planLabel : t('Free')}
+              </Text>
+            </View>
+          )}
         </View>
 
-        <SectionCard title={t('Personal details')}>
-          {isEdit ? (
-            <View style={styles.fieldStack}>
-              <TextField
-                label={t('Name')}
-                value={name}
-                onChangeText={value => setName(sanitizeName(value))}
-                editable
-                autoCapitalize="words"
-                maxLength={NAME_MAX}
-                placeholder={t('Enter your full name')}
-                error={nameError}
-                style={styles.input}
-              />
-              {isStaff ? (
-                <View style={styles.lockedStack}>
-                  <InfoRow label={t('Email')} value={email} />
-                  <InfoRow label={t('Phone')} value={phone} last />
-                  <Text style={styles.lockedHint}>
-                    {t('Your email and phone are set by your provider. Ask them to change either one.')}
-                  </Text>
-                </View>
-              ) : (
-                <>
-                  <TextField
-                    label={t('Email')}
-                    value={email}
-                    onChangeText={value => setEmail(sanitizeEmail(value))}
-                    editable
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    maxLength={254}
-                    placeholder="you@example.com"
-                    error={emailError}
-                    style={styles.input}
-                  />
-                  <TextField
-                    label={t('Phone')}
-                    value={phone}
-                    onChangeText={value => setPhone(sanitizePhone(value))}
-                    editable
-                    keyboardType="phone-pad"
-                    maxLength={16}
-                    placeholder={t('Enter your phone number')}
-                    error={phoneError}
-                    style={styles.input}
-                  />
-                </>
-              )}
-            </View>
-          ) : (
-            <View>
-              <InfoRow label={t('Name')} value={name} />
-              <InfoRow label={t('Email')} value={email} />
-              <InfoRow label={t('Phone')} value={phone} last />
-            </View>
-          )}
-        </SectionCard>
+        {isEdit ? <Text style={styles.heroHint}>{t('Tap the photo to change it')}</Text> : null}
+      </View>
 
-        <SectionCard title={t('About us')}>
-          {isEdit ? (
-            <TextField
-              label={t('Tell customers about your service')}
-              value={aboutUs}
-              onChangeText={setAboutUs}
-              editable
-              multiline
-              maxLength={500}
-              placeholder={t('Describe your experience, services and what makes you stand out.')}
-              style={[styles.input, styles.textArea]}
-            />
-          ) : (
-            <Text style={[styles.aboutText, !aboutUs && styles.infoValueEmpty]}>
-              {aboutUs || t('No description added yet.')}
-            </Text>
-          )}
-        </SectionCard>
-
-        <SectionCard
-          title={t('Documents')}
-          action={
-            <Text style={styles.cardCount}>
-              {documentCount}/{MAX_DOCUMENTS}
-            </Text>
-          }>
-          {documentCount === 0 && !isEdit ? (
-            <Text style={[styles.aboutText, styles.infoValueEmpty]}>{t('No documents uploaded yet.')}</Text>
-          ) : (
-            <View style={styles.documentsRow}>
-              {existingDocuments.map(uri => (
-                <View key={uri} style={styles.documentThumbWrap}>
-                  <Image source={{ uri }} style={styles.documentThumb} />
-                  {isEdit ? (
-                    <TouchableOpacity
-                      style={styles.removeBadge}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      onPress={() => removeExistingDocument(uri)}>
-                      <Text style={styles.removeBadgeText}>×</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
-              {newDocuments.map(doc => (
-                <View key={doc.uri} style={styles.documentThumbWrap}>
-                  <Image source={{ uri: doc.uri }} style={styles.documentThumb} />
-                  {isEdit ? (
-                    <TouchableOpacity
-                      style={styles.removeBadge}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      onPress={() => removeNewDocument(doc.uri)}>
-                      <Text style={styles.removeBadgeText}>×</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
-              ))}
-              {isEdit && canAddDocuments ? (
-                <TouchableOpacity style={styles.addDocumentButton} onPress={handlePickDocuments} activeOpacity={0.7}>
-                  <Text style={styles.addDocumentIcon}>+</Text>
-                  <Text style={styles.addDocumentText}>{t('Add')}</Text>
-                </TouchableOpacity>
-              ) : null}
-            </View>
-          )}
-          {isEdit ? (
-            <Text style={styles.documentsHint}>
-              {t('Upload up to {{max}} images of your certificates or IDs.', { max: MAX_DOCUMENTS })}
-            </Text>
-          ) : null}
-        </SectionCard>
-
+      <SectionCard title={t('Personal details')}>
         {isEdit ? (
-          <View style={styles.actionRow}>
-            <PrimaryButton
-              title={t('Cancel')}
-              onPress={cancelEditing}
-              style={styles.secondaryButton}
-              textStyle={styles.secondaryButtonText}
+          <View style={styles.fieldStack}>
+            <TextField
+              label={t('Name')}
+              value={name}
+              onChangeText={value => setName(sanitizeName(value))}
+              editable
+              autoCapitalize="words"
+              maxLength={NAME_MAX}
+              placeholder={t('Enter your full name')}
+              error={nameError}
+              style={styles.input}
             />
-            <PrimaryButton title={t('Save Changes')} onPress={handleSave} style={styles.primaryButton} />
+            {isStaff ? (
+              <View style={styles.lockedStack}>
+                <InfoRow label={t('Email')} value={email} />
+                <InfoRow label={t('Phone')} value={phone} last />
+                <Text style={styles.lockedHint}>
+                  {t('Your email and phone are set by your provider. Ask them to change either one.')}
+                </Text>
+              </View>
+            ) : (
+              <>
+                <TextField
+                  label={t('Email')}
+                  value={email}
+                  onChangeText={value => setEmail(sanitizeEmail(value))}
+                  editable
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={254}
+                  placeholder="you@example.com"
+                  error={emailError}
+                  style={styles.input}
+                />
+                <TextField
+                  label={t('Phone')}
+                  value={phone}
+                  onChangeText={value => setPhone(sanitizePhone(value))}
+                  editable
+                  keyboardType="phone-pad"
+                  maxLength={16}
+                  placeholder={t('Enter your phone number')}
+                  error={phoneError}
+                  style={styles.input}
+                />
+              </>
+            )}
           </View>
         ) : (
-          <PrimaryButton title={t('Edit Profile')} onPress={startEditing} style={styles.fullButton} />
+          <View>
+            <InfoRow label={t('Name')} value={name} />
+            <InfoRow label={t('Email')} value={email} />
+            <InfoRow label={t('Phone')} value={phone} last />
+          </View>
         )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </SectionCard>
+
+      <SectionCard title={t('About us')}>
+        {isEdit ? (
+          <TextField
+            label={t('Tell customers about your service')}
+            value={aboutUs}
+            onChangeText={setAboutUs}
+            editable
+            multiline
+            maxLength={500}
+            placeholder={t('Describe your experience, services and what makes you stand out.')}
+            style={[styles.input, styles.textArea]}
+          />
+        ) : (
+          <Text style={[styles.aboutText, !aboutUs && styles.infoValueEmpty]}>
+            {aboutUs || t('No description added yet.')}
+          </Text>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title={t('Documents')}
+        action={
+          <Text style={styles.cardCount}>
+            {documentCount}/{MAX_DOCUMENTS}
+          </Text>
+        }>
+        {documentCount === 0 && !isEdit ? (
+          <Text style={[styles.aboutText, styles.infoValueEmpty]}>{t('No documents uploaded yet.')}</Text>
+        ) : (
+          <View style={styles.documentsRow}>
+            {existingDocuments.map(uri => (
+              <View key={uri} style={styles.documentThumbWrap}>
+                <Image source={{ uri }} style={styles.documentThumb} />
+                {isEdit ? (
+                  <TouchableOpacity
+                    style={styles.removeBadge}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={() => removeExistingDocument(uri)}>
+                    <Text style={styles.removeBadgeText}>×</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ))}
+            {newDocuments.map(doc => (
+              <View key={doc.uri} style={styles.documentThumbWrap}>
+                <Image source={{ uri: doc.uri }} style={styles.documentThumb} />
+                {isEdit ? (
+                  <TouchableOpacity
+                    style={styles.removeBadge}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    onPress={() => removeNewDocument(doc.uri)}>
+                    <Text style={styles.removeBadgeText}>×</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ))}
+            {isEdit && canAddDocuments ? (
+              <TouchableOpacity style={styles.addDocumentButton} onPress={handlePickDocuments} activeOpacity={0.7}>
+                <Text style={styles.addDocumentIcon}>+</Text>
+                <Text style={styles.addDocumentText}>{t('Add')}</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        )}
+        {isEdit ? (
+          <Text style={styles.documentsHint}>
+            {t('Upload up to {{max}} images of your certificates or IDs.', { max: MAX_DOCUMENTS })}
+          </Text>
+        ) : null}
+      </SectionCard>
+
+      {isEdit ? (
+        <View style={styles.actionRow}>
+          <PrimaryButton
+            title={t('Cancel')}
+            onPress={cancelEditing}
+            style={styles.secondaryButton}
+            textStyle={styles.secondaryButtonText}
+          />
+          <PrimaryButton title={t('Save Changes')} onPress={handleSave} style={styles.primaryButton} />
+        </View>
+      ) : (
+        <PrimaryButton title={t('Edit Profile')} onPress={startEditing} style={styles.fullButton} />
+      )}
+    </KeyboardAwareScrollView>
   );
 }
 

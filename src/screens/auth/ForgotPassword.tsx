@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from '../../components/KeyboardAwareScrollView';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -97,70 +98,68 @@ export default function ForgotPassword({ navigation }: Props) {
 
   return (
     <SafeAreaView style={styles.flex} edges={['top', 'bottom']}>
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>‹</Text>
-        </TouchableOpacity>
+    <KeyboardAwareScrollView style={styles.flex} contentContainerStyle={styles.scroll}>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <Text style={styles.backIcon}>‹</Text>
+      </TouchableOpacity>
 
-        <View style={styles.welcomeBlock}>
-          <Text style={styles.welcomeText}>{t('Forgot password')}</Text>
-        </View>
+      <View style={styles.welcomeBlock}>
+        <Text style={styles.welcomeText}>{t('Forgot password')}</Text>
+      </View>
 
-        <Image source={require('../../assets/images/forgotPasswordBg.png')} style={styles.bgImage} resizeMode="contain" />
+      <Image source={require('../../assets/images/forgotPasswordBg.png')} style={styles.bgImage} resizeMode="contain" />
 
-        {step === 1 && (
+      {step === 1 && (
+        <TextField
+          label={t('Email')}
+          placeholder={t('Enter email')}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={254}
+          value={email}
+          onChangeText={value => setEmail(sanitizeEmail(value))}
+          error={emailError}
+        />
+      )}
+
+      {step === 2 && (
+        <TextField
+          label={t('OTP')}
+          placeholder="******"
+          keyboardType="number-pad"
+          maxLength={OTP_LENGTH}
+          value={otp}
+          onChangeText={value => setOtp(sanitizeOtp(value))}
+          error={otpError}
+        />
+      )}
+
+      {step === 3 && (
+        <>
           <TextField
-            label={t('Email')}
-            placeholder={t('Enter email')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            maxLength={254}
-            value={email}
-            onChangeText={value => setEmail(sanitizeEmail(value))}
-            error={emailError}
+            label={t('Enter Password')}
+            placeholder="**************"
+            secureTextEntry
+            maxLength={64}
+            value={password}
+            onChangeText={value => setPassword(sanitizePassword(value))}
+            error={passwordError}
           />
-        )}
-
-        {step === 2 && (
           <TextField
-            label={t('OTP')}
-            placeholder="******"
-            keyboardType="number-pad"
-            maxLength={OTP_LENGTH}
-            value={otp}
-            onChangeText={value => setOtp(sanitizeOtp(value))}
-            error={otpError}
+            label={t('Enter Confirm Password')}
+            placeholder="**************"
+            secureTextEntry
+            maxLength={64}
+            value={confirmPassword}
+            onChangeText={value => setConfirmPassword(sanitizePassword(value))}
+            error={confirmPasswordError}
           />
-        )}
+        </>
+      )}
 
-        {step === 3 && (
-          <>
-            <TextField
-              label={t('Enter Password')}
-              placeholder="**************"
-              secureTextEntry
-              maxLength={64}
-              value={password}
-              onChangeText={value => setPassword(sanitizePassword(value))}
-              error={passwordError}
-            />
-            <TextField
-              label={t('Enter Confirm Password')}
-              placeholder="**************"
-              secureTextEntry
-              maxLength={64}
-              value={confirmPassword}
-              onChangeText={value => setConfirmPassword(sanitizePassword(value))}
-              error={confirmPasswordError}
-            />
-          </>
-        )}
-
-        <PrimaryButton title={t('Save')} onPress={handleSubmit} style={styles.saveButton} />
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <PrimaryButton title={t('Save')} onPress={handleSubmit} style={styles.saveButton} />
+    </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

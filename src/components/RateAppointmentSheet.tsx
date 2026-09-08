@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -13,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Text } from './Text';
 import { PrimaryButton } from './PrimaryButton';
 import { StarRating } from './StarRating';
+import { KeyboardAwareScrollView, useKeyboardFocusReporter } from './KeyboardAwareScrollView';
 import { reviewApi } from '../api/endpoints';
 import { ApiError } from '../api/client';
 import { useUi } from '../context/UiContext';
@@ -20,6 +19,27 @@ import { colors } from '../theme/colors';
 import type { Appointment, Review } from '../types/models';
 
 const RATING_LABELS = ['Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
+/** Sits inside the scroll view so it can report focus and be lifted above the keyboard. */
+function ReviewInput({ value, onChangeText }: { value: string; onChangeText: (text: string) => void }) {
+  const { t } = useTranslation();
+  const reportFocus = useKeyboardFocusReporter();
+
+  return (
+    <TextInput
+      style={styles.input}
+      placeholder={t('Share a few words about your experience...')}
+      placeholderTextColor={colors.grayLight}
+      value={value}
+      onChangeText={onChangeText}
+      multiline
+      numberOfLines={4}
+      maxLength={500}
+      textAlignVertical="top"
+      onFocus={() => reportFocus?.()}
+    />
+  );
+}
 
 interface RateAppointmentSheetProps {
   visible: boolean;
@@ -80,7 +100,10 @@ export function RateAppointmentSheet({ visible, appointment, onClose, onSubmitte
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView style={styles.overlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAwareScrollView
+        style={styles.flex}
+        contentContainerStyle={styles.overlay}
+        showsVerticalScrollIndicator={false}>
         <View style={[styles.sheet, { paddingBottom: 24 + insets.bottom }]}>
           <View style={styles.handle} />
 
@@ -97,17 +120,7 @@ export function RateAppointmentSheet({ visible, appointment, onClose, onSubmitte
           </View>
 
           <Text style={styles.label}>{t('Write a review (optional)')}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={t('Share a few words about your experience...')}
-            placeholderTextColor={colors.grayLight}
-            value={message}
-            onChangeText={setMessage}
-            multiline
-            numberOfLines={4}
-            maxLength={500}
-            textAlignVertical="top"
-          />
+          <ReviewInput value={message} onChangeText={setMessage} />
 
           <PrimaryButton
             title={existingReview ? t('Update Review') : t('Submit Review')}
@@ -121,13 +134,14 @@ export function RateAppointmentSheet({ visible, appointment, onClose, onSubmitte
             <Text style={styles.cancelText}>{t('Cancel')}</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  flex: { flex: 1 },
+  overlay: { flexGrow: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: {
     backgroundColor: colors.white,
     borderTopLeftRadius: 24,
