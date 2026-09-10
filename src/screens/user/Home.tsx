@@ -1127,24 +1127,8 @@ export default function Home() {
                   {genderError ? <Text style={styles.inlineError}>{genderError}</Text> : null}
                 </View>
 
-                {/* Quick Purpose Suggestions */}
                 <View style={styles.quickFieldGroup}>
                   <Text style={styles.fieldLabel}>{t('Purpose of Visit')}</Text>
-                  <View style={styles.chipRow}>
-                    {['General Consultation', 'Document Verification', 'Medical Checkup', 'Account Opening'].map(p => {
-                      const isSelected = payPurpose === p;
-                      return (
-                        <TouchableOpacity
-                          key={p}
-                          style={[styles.dateChip, isSelected && styles.dateChipActive]}
-                          onPress={() => setPayPurpose(p)}>
-                          <Text style={[styles.dateChipText, isSelected && styles.dateChipTextActive]}>
-                            {t(p)}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
                   <TextField
                     label=""
                     value={payPurpose}
