@@ -8,7 +8,7 @@ import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
 import { EmptyState } from '../../components/EmptyState';
-import { PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { Icon } from '../../components/Icon';
 import { appointmentApi, staffApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
@@ -100,6 +100,8 @@ export default function HomeStaff() {
       contentContainerStyle={styles.scroll}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}>
       <PageHeader title={t('Hi, {{name}}', { name: userDetail?.name ?? t('Staff') })} />
+
+      <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
 
       <PlanStatusNotice
         entitlements={entitlements}

@@ -21,17 +21,19 @@ interface PlanNoticeProps {
   /** Renders the "View plans" link when given. */
   onViewPlans?: () => void;
   actionLabel?: string;
+  /** Overrides the tone's default icon. */
+  icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }
 
 /** The bar every gated screen puts above its content. */
-export function PlanNotice({ tone, title, message, onViewPlans, actionLabel, style }: PlanNoticeProps) {
+export function PlanNotice({ tone, title, message, onViewPlans, actionLabel, icon, style }: PlanNoticeProps) {
   const { t } = useTranslation();
   const palette = TONES[tone];
 
   return (
     <View style={[styles.wrap, { backgroundColor: palette.bg, borderColor: palette.border }, style]}>
-      <Icon name={palette.icon} size={18} color={palette.title} style={styles.icon} />
+      <Icon name={icon ?? palette.icon} size={18} color={palette.title} style={styles.icon} />
       <View style={styles.textWrap}>
         <Text style={[styles.title, { color: palette.title }]}>{title}</Text>
         <Text style={[styles.message, { color: palette.body }]}>{message}</Text>
@@ -57,8 +59,9 @@ export function PlanStatusNotice({
   style?: StyleProp<ViewStyle>;
 }) {
   const { t } = useTranslation();
-  const { state, managedByMe, planLabel, endDate, daysRemaining } = entitlements;
+  const { state, managedByMe, planLabel, endDate, daysRemaining, isVerified } = entitlements;
 
+  if (!isVerified) return null;
   if (state === 'active' || state === 'open') return null;
 
   const date = moment(endDate).format('DD MMM YYYY');
@@ -71,15 +74,15 @@ export function PlanStatusNotice({
         message={
           managedByMe
             ? t('{{plan}} runs out in {{days}} days, on {{date}}. Renew to keep managing your agency.', {
-                plan: planLabel,
-                days: daysRemaining,
-                date,
-              })
+              plan: planLabel,
+              days: daysRemaining,
+              date,
+            })
             : t('{{plan}} runs out in {{days}} days, on {{date}}. Ask your provider to renew it.', {
-                plan: planLabel,
-                days: daysRemaining,
-                date,
-              })
+              plan: planLabel,
+              days: daysRemaining,
+              date,
+            })
         }
         onViewPlans={onViewPlans}
         actionLabel={managedByMe ? t('Renew now') : t('View plans')}
@@ -116,6 +119,49 @@ export function PlanStatusNotice({
       }
       onViewPlans={onViewPlans}
       actionLabel={managedByMe ? t('Choose a plan') : t('View plans')}
+      style={style}
+    />
+  );
+}
+
+export function VerificationNotice({
+  entitlements,
+  style,
+}: {
+  entitlements: Entitlements;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const { t } = useTranslation();
+  const { isVerified, verification, managedByMe } = entitlements;
+
+  if (isVerified) return null;
+
+  if (verification === 'Suspended') {
+    return (
+      <PlanNotice
+        tone="locked"
+        icon="alert-triangle"
+        title={managedByMe ? t('Your account is suspended') : t('Your agency is suspended')}
+        message={
+          managedByMe
+            ? t('An admin has suspended your agency. Managing it is off until this is resolved - please contact support.')
+            : t('An admin has suspended this agency. Ask your provider to contact support.')
+        }
+        style={style}
+      />
+    );
+  }
+
+  return (
+    <PlanNotice
+      tone="warning"
+      icon="shield"
+      title={managedByMe ? t('Your account is under review') : t('Your agency is under review')}
+      message={
+        managedByMe
+          ? t('An admin is checking your agency details. After verification you choose a plan, adding services, hiring staff and running your queue open up once you are verified.')
+          : t('An admin is still checking this agency. Until it is verified you can look around, but nothing can be changed.')
+      }
       style={style}
     />
   );

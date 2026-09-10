@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/PageHeader';
 import { AppointmentListItem } from '../../components/AppointmentListItem';
 import { EmptyState } from '../../components/EmptyState';
-import { PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { Icon } from '../../components/Icon';
 import { appointmentApi, authApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
@@ -117,19 +117,13 @@ export default function HomeProvider() {
           </Text>
         </View>
       )}
-      {userDetail?.status === 'Pending' && (
-        <View style={{ backgroundColor: '#fff3e0', padding: 14, borderRadius: 10, marginHorizontal: 16, marginTop: 12, borderWidth: 1, borderColor: '#ffb74d' }}>
-          <Text style={{ color: '#e65100', fontWeight: 'bold', fontSize: 16 }}>{t('Verification Pending')}</Text>
-          <Text style={{ color: '#ef6c00', fontSize: 13, marginTop: 4 }}>
-            {t('Your account is under verification by Admin.')}
-          </Text>
-        </View>
-      )}
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}>
         <PageHeader title={t('Hi, {{name}}', { name: userDetail?.name ?? t('Provider') })} />
+
+        <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
 
         <PlanStatusNotice
           entitlements={entitlements}

@@ -10,7 +10,7 @@ import moment from 'moment';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
-import { PlanNotice, PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanNotice, PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { categoryApi, serviceApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -361,6 +361,7 @@ export default function MyServiceProvider() {
           ) : null}
         </View>
 
+        <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
         <PlanStatusNotice entitlements={entitlements} onViewPlans={openPlans} style={styles.planNotice} />
 
         {entitlements.canWrite && !hasListingRoom ? (

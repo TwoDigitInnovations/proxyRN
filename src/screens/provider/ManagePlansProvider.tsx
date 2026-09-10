@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { VerificationNotice } from '../../components/PlanNotice';
 import { Icon, type IconName } from '../../components/Icon';
 import { subscriptionApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
@@ -75,8 +76,8 @@ export default function ManagePlansProvider() {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
-  const { userDetail, updateUserDetail, can } = useAuth();
-  const canManage = can('subscription.manage');
+  const { userDetail, updateUserDetail, can, entitlements } = useAuth();
+  const canManage = can('subscription.manage') && entitlements.canSubscribe;
   const { showLoading, hideLoading, showToast } = useUi();
 
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -148,6 +149,10 @@ export default function ManagePlansProvider() {
   }, [cacheOnUser]);
 
   function openCheckout(plan: Plan) {
+    if (!entitlements.canSubscribe) {
+      showToast(t(entitlements.lockKey('Your plan cannot be changed right now.')));
+      return;
+    }
     setCheckoutPlan(plan);
     setPaymentError(null);
     setPaySubmitted(false);
@@ -318,6 +323,9 @@ export default function ManagePlansProvider() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Why every plan button below is off, when it is */}
+        <VerificationNotice entitlements={entitlements} style={styles.verificationNotice} />
+
         {/* Current plan */}
         <View style={[styles.currentCard, isSubscribed && styles.currentCardPaid]}>
           <View style={styles.currentHeader}>
@@ -755,6 +763,7 @@ const styles = StyleSheet.create({
   },
   scroll: { padding: 16, paddingBottom: 40 },
 
+  verificationNotice: { marginBottom: 14 },
   currentCard: {
     backgroundColor: colors.white,
     borderRadius: 16,

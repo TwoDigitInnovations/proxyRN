@@ -8,7 +8,7 @@ import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
-import { PlanNotice, PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanNotice, PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { serviceApi, staffApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
@@ -272,6 +272,7 @@ export default function MyStaffProvider() {
           ) : null}
         </View>
 
+        <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
         <PlanStatusNotice entitlements={entitlements} onViewPlans={openPlans} style={styles.planNotice} />
 
         {canManage && !hasSeat ? (

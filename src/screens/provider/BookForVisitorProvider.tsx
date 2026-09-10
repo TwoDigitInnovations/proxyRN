@@ -14,7 +14,7 @@ import { Text } from '../../components/Text';
 import { TextField } from '../../components/TextField';
 import { PrimaryButton } from '../../components/PrimaryButton';
 import { EmptyState } from '../../components/EmptyState';
-import { PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { Icon, type IconName } from '../../components/Icon';
 import { appointmentApi, staffApi } from '../../api/endpoints';
 import { ApiError } from '../../api/client';
@@ -335,6 +335,7 @@ export default function BookForVisitorProvider() {
       style={styles.flex}
       contentContainerStyle={styles.scroll}
       showsVerticalScrollIndicator={false}>
+      <VerificationNotice entitlements={entitlements} style={styles.notice} />
       {!entitlements.canWrite ? (
         <PlanStatusNotice entitlements={entitlements} style={styles.notice} />
       ) : null}

@@ -602,5 +602,16 @@
   "Search visitor, purpose or ticket": "Rechercher un visiteur, un motif ou un ticket",
   "No matching appointments": "Aucun rendez-vous correspondant",
   "Try another date, another search or clear the filters.": "Essayez une autre date, une autre recherche ou effacez les filtres.",
-  "No history matches these filters.": "Aucun historique ne correspond à ces filtres."
+  "No history matches these filters.": "Aucun historique ne correspond à ces filtres.",
+  "Your agency is still being reviewed by Admin. Ask your provider to follow it up.": "Votre agence est encore en cours d'examen par l'administrateur. Demandez à votre prestataire de faire le suivi.",
+  "Your agency has been suspended by Admin. Ask your provider to contact support.": "Votre agence a été suspendue par l'administrateur. Demandez à votre prestataire de contacter le support.",
+  "Your account is under review": "Votre compte est en cours d'examen",
+  "Your agency is under review": "Votre agence est en cours d'examen",
+  "Your account is suspended": "Votre compte est suspendu",
+  "Your agency is suspended": "Votre agence est suspendue",
+  "An admin is checking your agency details. You can finish your profile and upload your documents now - choosing a plan, adding services, hiring staff and running your queue open up once you are verified.": "Un administrateur vérifie les informations de votre agence. Vous pouvez dès maintenant compléter votre profil et téléverser vos documents – le choix d'un forfait, l'ajout de services, le recrutement de personnel et la gestion de votre file d'attente seront accessibles une fois que vous serez vérifié.",
+  "An admin is still checking this agency. Until it is verified you can look around, but nothing can be changed.": "Un administrateur vérifie encore cette agence. Tant qu'elle n'est pas vérifiée, vous pouvez consulter, mais rien ne peut être modifié.",
+  "An admin has suspended your agency. Managing it is off until this is resolved - please contact support.": "Un administrateur a suspendu votre agence. Sa gestion est désactivée jusqu'à la résolution du problème – veuillez contacter le support.",
+  "An admin has suspended this agency. Ask your provider to contact support.": "Un administrateur a suspendu cette agence. Demandez à votre prestataire de contacter le support.",
+  "Your plan cannot be changed right now.": "Votre forfait ne peut pas être modifié pour le moment."
 }

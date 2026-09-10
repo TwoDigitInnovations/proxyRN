@@ -8,7 +8,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { StarRating } from '../../components/StarRating';
-import { PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { reviewApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
@@ -94,6 +94,13 @@ export default function SettingsProvider() {
   const planLabel = entitlements.planLabel;
   const isSubscribed = entitlements.isActive && entitlements.state !== 'open';
 
+  // The admin's actual decision on this account - not a fixed label.
+  const roleTag = {
+    Verified: { text: t('Verified Service Provider'), style: styles.roleTagVerified, textStyle: styles.roleTagTextVerified },
+    Pending: { text: t('Verification Pending'), style: styles.roleTagPending, textStyle: styles.roleTagTextPending },
+    Suspended: { text: t('Account Suspended'), style: styles.roleTagSuspended, textStyle: styles.roleTagTextSuspended },
+  }[entitlements.verification];
+
   const initialLetter = userDetail?.name ? userDetail.name.charAt(0).toUpperCase() : 'P';
 
   return (
@@ -117,8 +124,8 @@ export default function SettingsProvider() {
             {userDetail?.email || userDetail?.phone || t('Provider Settings')}
           </Text>
           <View style={styles.tagRow}>
-            <View style={styles.roleTag}>
-              <Text style={styles.roleTagText}>{t('Verified Service Provider')}</Text>
+            <View style={[styles.roleTag, roleTag.style]}>
+              <Text style={[styles.roleTagText, roleTag.textStyle]}>{roleTag.text}</Text>
             </View>
             <View style={[styles.planTag, isSubscribed ? styles.planTagPaid : styles.planTagFree]}>
               <Icon name="crown" size={10} color={isSubscribed ? '#B45309' : colors.gray} />
@@ -135,6 +142,8 @@ export default function SettingsProvider() {
           <Text style={styles.editProfileBtnText}>{t('Edit')}</Text>
         </TouchableOpacity>
       </View>
+
+      <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
 
       <PlanStatusNotice
         entitlements={entitlements}
@@ -340,11 +349,13 @@ const styles = StyleSheet.create({
   },
   roleTag: {
     alignSelf: 'flex-start',
-    backgroundColor: '#DCFCE7',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 10,
   },
+  roleTagVerified: { backgroundColor: '#DCFCE7' },
+  roleTagPending: { backgroundColor: '#FEF3C7' },
+  roleTagSuspended: { backgroundColor: '#FEE2E2' },
   planTag: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -373,9 +384,11 @@ const styles = StyleSheet.create({
   },
   roleTagText: {
     fontSize: 11,
-    color: '#15803D',
     fontWeight: '600',
   },
+  roleTagTextVerified: { color: '#15803D' },
+  roleTagTextPending: { color: '#B45309' },
+  roleTagTextSuspended: { color: '#B91C1C' },
   editProfileBtn: {
     paddingHorizontal: 14,
     paddingVertical: 6,

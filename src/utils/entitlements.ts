@@ -137,8 +137,17 @@ export interface Entitlements {
   state: PlanState;
   /** True while a paid plan is live - the single switch every write is gated on. */
   isActive: boolean;
-  /** Create, edit and delete. False on `free` and `expired`. */
+  /** Where the agency sits in the admin's review. `Verified` for everyone else. */
+  verification: VerificationStatus;
+  /** An admin has cleared the agency. Nothing an agency does is on until this is true. */
+  isVerified: boolean;
+  /**
+   * Create, edit and delete. False on `free` and `expired`, and false for an
+   * agency the admin has not verified yet whatever its plan says.
+   */
   canWrite: boolean;
+  /** A plan can only be bought once the admin has verified the agency. */
+  canSubscribe: boolean;
   /** True for the provider who owns the plan, false for their staff. */
   managedByMe: boolean;
   planLabel: string;
@@ -158,6 +167,23 @@ export interface Entitlements {
 
 /** What a staff member is told when the agency's plan is not live. */
 export const AGENCY_LOCKED_KEY = 'Your agency plan is not active. Ask your provider to renew it.';
+
+/** Where an agency account sits in the admin's review. Mirrors `User.status`. */
+export type VerificationStatus = 'Pending' | 'Verified' | 'Suspended';
+
+/** What a provider is told while the admin has not cleared them yet. */
+export const PENDING_VERIFICATION_KEY =
+  'Your account is under review by Admin. You will be notified once verified.';
+export const SUSPENDED_KEY = 'Your account has been suspended by Admin. Please contact support.';
+export const AGENCY_PENDING_KEY =
+  'Your agency is still being reviewed by Admin. Ask your provider to follow it up.';
+export const AGENCY_SUSPENDED_KEY =
+  'Your agency has been suspended by Admin. Ask your provider to contact support.';
+
+function verificationLockKey(status: VerificationStatus, managedByMe: boolean): string {
+  if (managedByMe) return status === 'Suspended' ? SUSPENDED_KEY : PENDING_VERIFICATION_KEY;
+  return status === 'Suspended' ? AGENCY_SUSPENDED_KEY : AGENCY_PENDING_KEY;
+}
 
 function readNumber(value: unknown, fallback: number): number {
   const parsed = Number(value);
@@ -190,6 +216,7 @@ function wholeDaysUntil(endDate: string | null): number {
 function build(
   state: PlanState,
   managedByMe: boolean,
+  verification: VerificationStatus,
   planLabel: string,
   endDate: string | null,
   daysRemaining: number,
@@ -197,6 +224,7 @@ function build(
   capabilities: PlanCapabilities,
 ): Entitlements {
   const isActive = state === 'active' || state === 'expiring' || state === 'open';
+  const isVerified = verification === 'Verified';
 
   const limitOf = (key: LimitKey) => limits[key];
   const isUnlimited = (key: LimitKey) => limits[key] === UNLIMITED;
@@ -204,7 +232,10 @@ function build(
   return {
     state,
     isActive,
-    canWrite: isActive,
+    verification,
+    isVerified,
+    canWrite: isActive && isVerified,
+    canSubscribe: isVerified,
     managedByMe,
     planLabel,
     endDate,
@@ -213,11 +244,16 @@ function build(
     capabilities,
     limitOf,
     isUnlimited,
-    allows: (key: CapabilityKey) => isActive && !!capabilities[key],
+    allows: (key: CapabilityKey) => isActive && isVerified && !!capabilities[key],
     hasRoom: (key: LimitKey, used: number) => isUnlimited(key) || used < limits[key],
     remaining: (key: LimitKey, used: number) =>
       isUnlimited(key) ? null : Math.max(0, limits[key] - used),
-    lockKey: (providerKey: string) => (managedByMe ? providerKey : AGENCY_LOCKED_KEY),
+    lockKey: (providerKey: string) =>
+      !isVerified
+        ? verificationLockKey(verification, managedByMe)
+        : managedByMe
+        ? providerKey
+        : AGENCY_LOCKED_KEY,
   };
 }
 
@@ -230,10 +266,24 @@ interface SubscriptionLike {
 
 interface AccountLike {
   role?: string;
+  /** The admin's decision on this account. Staff read their provider's instead. */
+  status?: string;
+  parent_provider?: { status?: string } | string | null;
   plan_name?: string | null;
   plan_expires_at?: string | null;
   planLabel?: string;
   subscription?: SubscriptionLike | null;
+}
+
+function readVerification(value: unknown): VerificationStatus | null {
+  return value === 'Pending' || value === 'Verified' || value === 'Suspended' ? value : null;
+}
+
+function resolveVerification(account: AccountLike, managedByMe: boolean): VerificationStatus {
+  if (managedByMe) return readVerification(account.status) ?? 'Verified';
+  const parent = account.parent_provider;
+  const parentStatus = parent && typeof parent === 'object' ? parent.status : null;
+  return readVerification(parentStatus) ?? 'Verified';
 }
 
 /**
@@ -244,13 +294,14 @@ export function resolveEntitlements(account?: AccountLike | null): Entitlements 
   const inAgency = role === 'provider' || role === 'staff';
 
   if (!account || !inAgency) {
-    return build('open', false, account?.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
+    return build('open', false, 'Verified', account?.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
   }
 
   const managedByMe = role === 'provider';
+  const verification = resolveVerification(account, managedByMe);
   const summary = account.subscription ?? null;
   if (!managedByMe && account.subscription === undefined) {
-    return build('open', false, account.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
+    return build('open', false, verification, account.planLabel ?? 'Free', null, 0, OPEN_LIMITS, OPEN_CAPABILITIES);
   }
 
   const endDate = summary?.endDate ?? (managedByMe ? account.plan_expires_at ?? null : null);
@@ -260,7 +311,7 @@ export function resolveEntitlements(account?: AccountLike | null): Entitlements 
 
   if (!live) {
     const state: PlanState = endDate ? 'expired' : 'free';
-    return build(state, managedByMe, 'Free', endDate, 0, FREE_LIMITS, FREE_CAPABILITIES);
+    return build(state, managedByMe, verification, 'Free', endDate, 0, FREE_LIMITS, FREE_CAPABILITIES);
   }
 
   const planLabel =
@@ -273,6 +324,7 @@ export function resolveEntitlements(account?: AccountLike | null): Entitlements 
   return build(
     state,
     managedByMe,
+    verification,
     planLabel,
     endDate,
     daysRemaining,

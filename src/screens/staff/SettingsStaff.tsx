@@ -8,7 +8,7 @@ import { Text } from '../../components/Text';
 import { PageHeader } from '../../components/PageHeader';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 import { Icon, type IconName } from '../../components/Icon';
-import { PlanStatusNotice } from '../../components/PlanNotice';
+import { PlanStatusNotice, VerificationNotice } from '../../components/PlanNotice';
 import { reviewApi, staffApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { colors } from '../../theme/colors';
@@ -141,6 +141,8 @@ export default function SettingsStaff() {
           </TouchableOpacity>
         ) : null}
       </View>
+
+      <VerificationNotice entitlements={entitlements} style={styles.planNotice} />
 
       <PlanStatusNotice
         entitlements={entitlements}
